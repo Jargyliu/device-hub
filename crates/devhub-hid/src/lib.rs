@@ -23,6 +23,8 @@ pub mod atk;
 #[doc(hidden)]
 pub mod lamzu;
 mod finalmouse;
+mod glw;
+mod glw_tables;
 mod ninjutso;
 #[allow(dead_code)]
 mod mousefit;
@@ -57,6 +59,7 @@ fn driver_ready(kind: DriverKind) -> bool {
         DriverKind::Lamzu => true,
         DriverKind::Finalmouse => true,
         DriverKind::Ninjutso => true,
+        DriverKind::Mchose => true,
         DriverKind::Unsupported => false,
     }
 }
@@ -293,6 +296,7 @@ impl RealHub {
             DriverKind::Lamzu => Arc::new(lamzu::open(dev, info, events)?),
             DriverKind::Finalmouse => Arc::new(finalmouse::open(dev, info)?),
             DriverKind::Ninjutso => Arc::new(ninjutso::open(dev, info)?),
+            DriverKind::Mchose => Arc::new(glw::open(dev, info)?),
             DriverKind::Unsupported => {
                 return Err(HubError::NotImplemented("the driver for this device"))
             }

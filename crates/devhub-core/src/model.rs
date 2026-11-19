@@ -76,6 +76,8 @@ pub enum DriverKind {
     Finalmouse,
     /// Ninjutso NinjaForce 旧世代 (Sora V2。feature report 5 / 4)。
     Ninjutso,
+    /// MCHOSE M HUB の GLW 系磁気軸キーボード (ACE68 GT 等。64B output/input)。
+    Mchose,
     /// 未割り当て (検出だけできる)。
     Unsupported,
 }

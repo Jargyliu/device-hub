@@ -514,6 +514,23 @@ pub const KNOWN: &[KnownDevice] = &[
         driver: DriverKind::Ninjutso,
         verified: false,
     },
+    // ---------------------------------------------------------------- キーボード (MCHOSE M HUB / GLW)
+    // ACE68 GT — 公式 M HUB の機種定義 (vendorId 14391, productId 12295, type 213)。
+    // 設定 IF は usage page 0x0001 / usage 0x0000 (FF00/01 はブートローダ 3837:3009 用)。
+    // 有線のみ。実機未確認 (同じ SDK の Ace 75 8K は他プロジェクトで実機確認済み)。
+    KnownDevice {
+        vid: 0x3837,
+        pid: 0x3007,
+        usage_page: Some(0x0001),
+        usage: Some(0x0000),
+        kind: DeviceKind::Keyboard,
+        vendor: "MCHOSE",
+        model: "ace68-gt",
+        name: "MCHOSE Ace 68 GT",
+        transport: Transport::Wired,
+        driver: DriverKind::Mchose,
+        verified: false,
+    },
 ];
 
 /// 列挙結果 (VID/PID/usage) に合う既知デバイス。`0xFFFF` のプレースホルダは一致しない。

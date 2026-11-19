@@ -60,7 +60,8 @@ docs/FRONTEND.md        フロントエンドの構造
 - 公開資料から追加 (2026-11-19、**実機未確認** — docs/PROTOCOL_NOTES §6–§9):
   Scyrox V6・Pulsar X2 CrazyLight (CompX 系 → `atk.rs` の `CompxModel` 機種表)、
   WLMOUSE BEAST G (LAMZU と同じ 64B プロトコル → `devhub-core/src/lamzu.rs` の `Vendor`)、
-  Finalmouse UltralightX ドングル (`finalmouse.rs`)、Ninjutso Sora V2 (`ninjutso.rs`)。
+  Finalmouse UltralightX ドングル (`finalmouse.rs`)、Ninjutso Sora V2 (`ninjutso.rs`)、
+  MCHOSE Ace 68 GT 磁気軸キーボード (`glw.rs`、M HUB の GLW SDK — §10)。
   実機を挿したら全タブを一通り操作し、registry の `verified` と docs を更新すること。
 
 ## ビルド / 実行

@@ -19,6 +19,7 @@
 | Pulsar X2 CrazyLight | 3710:3414 / ドングル 5406 | FF02 | Atk (`atk.rs`、`CompxModel` PULSAR_X2CL) | bbb.pulsar.gg | 公開資料から実装 / **未検証** (§6) |
 | WLMOUSE BEAST G | 36A7:A861 / 受信機 A860 (8K)・A882 (1K) | FFFF | Lamzu (`lamzu.rs`、`Vendor` WLMOUSE) | gm.wlmouse.gg | 公開資料から実装 / **未検証** (§7) |
 | Finalmouse UltralightX | ドングル 361D:0100 | FF00 / 01 | Finalmouse (`finalmouse.rs`) | XPANEL | 公開資料から実装 / **未検証** (§8) |
+| MCHOSE Ace 68 GT | 3837:3007 | 0001 / 0000 | Mchose (`glw.rs`) | M HUB | 公式 SDK から実装 / **未検証** (§10) |
 | Ninjutso Sora V2 | 1915:AE11–AE16 / 受信機 AE1C・AE8C・AE8A | FFA0 | Ninjutso (`ninjutso.rs`) | NinjaForce | 公開資料から実装 / **未検証** (§9) |
 
 **接続方式でプロトコルが変わる点に注意**: mouse.fit の新プロトコル (64B feature report) は

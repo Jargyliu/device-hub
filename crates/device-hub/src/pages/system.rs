@@ -58,6 +58,7 @@ impl Shell {
                         DriverKind::Lamzu => "LAMZU Aurora / WL MOUSE HUB compatible".into(),
                         DriverKind::Finalmouse => "Finalmouse XPANEL compatible".into(),
                         DriverKind::Ninjutso => "Ninjutso NinjaForce compatible".into(),
+                        DriverKind::Mchose => "MCHOSE M HUB compatible".into(),
                         DriverKind::Unsupported => "Unsupported".into(),
                     },
                 ))
