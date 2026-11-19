@@ -9,16 +9,16 @@ use std::rc::Rc;
 
 /// section の表示順と見出し。
 pub const SECTIONS: &[(&str, &str, &str)] = &[
-    (section::PERFORMANCE, "パフォーマンス", "gauge"),
-    (section::SENSOR, "センサー", "radar"),
-    (section::CLICK, "クリック / ホイール", "mouse-pointer-click"),
-    (section::MAGNETIC, "磁気スイッチ", "magnet"),
-    (section::POWER, "電源 / インジケーター", "battery-charging"),
-    (section::KEYBOARD, "キーボード", "keyboard"),
-    (section::LIGHTING, "ライティング全般", "lightbulb"),
-    (section::CONNECTION, "接続", "radio"),
-    (section::AUDIO, "オーディオ", "volume-2"),
-    (section::SYSTEM, "メンテナンス", "wrench"),
+    (section::PERFORMANCE, "Performance", "gauge"),
+    (section::SENSOR, "Sensor", "radar"),
+    (section::CLICK, "Click / Wheel", "mouse-pointer-click"),
+    (section::MAGNETIC, "Magnetic Switches", "magnet"),
+    (section::POWER, "Power / Indicators", "battery-charging"),
+    (section::KEYBOARD, "Keyboard", "keyboard"),
+    (section::LIGHTING, "General Lighting", "lightbulb"),
+    (section::CONNECTION, "Connection", "radio"),
+    (section::AUDIO, "Audio", "volume-2"),
+    (section::SYSTEM, "Maintenance", "wrench"),
 ];
 
 pub fn section_meta(id: &str) -> (&'static str, &'static str) {
@@ -26,7 +26,7 @@ pub fn section_meta(id: &str) -> (&'static str, &'static str) {
         .iter()
         .find(|s| s.0 == id)
         .map(|s| (s.1, s.2))
-        .unwrap_or(("その他", "sliders-horizontal"))
+        .unwrap_or(("Other", "sliders-horizontal"))
 }
 
 impl Shell {
@@ -136,7 +136,7 @@ impl Shell {
             }
         };
         let Some(v) = value.cloned() else {
-            return row(ui::faint("読み取れません").into_any_element()).opacity(0.6);
+            return row(ui::faint("Unreadable").into_any_element()).opacity(0.6);
         };
         let id = sp.id.clone();
         let confirm = sp.confirm.clone();
@@ -150,9 +150,9 @@ impl Shell {
                 if let Some(msg) = &confirm {
                     let c2 = change.clone();
                     this.confirm(
-                        "確認",
+                        "Confirm",
                         msg,
-                        "変更する",
+                        "Change",
                         true,
                         Rc::new(move |this, _, cx| this.apply(c2.clone(), cx)),
                         cx,
@@ -234,9 +234,14 @@ impl Shell {
                 // セグメント化は収まるものだけ: ≤4 個なら中程度のラベルまで、
                 // ≤8 個なら短いラベルのみ。それ以上はドロップダウンに逃がす
                 // (DAC フィルター 5 択のようにカードからはみ出すのを防ぐ)。
-                let short = (options.len() <= 4
-                    && options.iter().all(|o| o.label.chars().count() <= 8))
-                    || (options.len() <= 8 && options.iter().all(|o| o.label.chars().count() <= 4));
+                // 幅は表示幅で数える (全角 = 2、半角 = 1)。
+                let width = |s: &str| {
+                    s.chars()
+                        .map(|c| if (c as u32) >= 0x1100 { 2 } else { 1 })
+                        .sum::<usize>()
+                };
+                let short = (options.len() <= 4 && options.iter().all(|o| width(&o.label) <= 10))
+                    || (options.len() <= 8 && options.iter().all(|o| width(&o.label) <= 6));
                 let opts = options.clone();
                 if short {
                     let labels: Vec<String> = options.iter().map(|o| o.label.clone()).collect();
@@ -288,7 +293,7 @@ impl Shell {
         let a2 = a.clone();
         let btn = ui::button(
             format!("act-{}", a.id),
-            if busy { "実行中…" } else { "実行" },
+            if busy { "Running…" } else { "Run" },
             Some(if a.file.is_some() {
                 "file-up"
             } else if a.danger {
@@ -312,7 +317,7 @@ impl Shell {
     pub fn start_action(&mut self, a: &ActionSpec, window: &mut Window, cx: &mut Context<Self>) {
         let Some(id) = self.device_id() else { return };
         if self.cur().and_then(|s| s.running.as_ref()).is_some() {
-            self.toast("別の操作を実行中です", true, cx);
+            self.toast("Another action is running", true, cx);
             return;
         }
         // キャリブレーションはウィザードで行う (押下深さを見ながら全キーを確認する)。
@@ -357,7 +362,7 @@ impl Shell {
             },
         );
         if let Some(c) = &confirm {
-            self.confirm(&title, c, "実行", danger, run, cx);
+            self.confirm(&title, c, "Run", danger, run, cx);
         } else {
             run(self, window, cx);
         }

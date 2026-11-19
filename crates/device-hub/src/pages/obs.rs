@@ -64,14 +64,14 @@ fn targets(this: &Shell) -> (String, KeyboardCaps, f32, String, Vec<String>) {
     });
     let travel = kc.perf.as_ref().map(|p| p.travel).unwrap_or(4.);
     let (m_name, names) =
-        mouse.unwrap_or_else(|| ("マウス".into(), vec!["Left".into(), "Right".into()]));
+        mouse.unwrap_or_else(|| ("Mouse".into(), vec!["Left".into(), "Right".into()]));
     (kb_name, kc, travel, m_name, names)
 }
 
 impl Shell {
     fn obs_save(&mut self, cx: &mut Context<Self>) {
         if let Err(e) = devhub_obs::config::save(&self.obs_cfg) {
-            self.toast(format!("OBS 設定を保存できません: {e}"), true, cx);
+            self.toast(format!("Cannot save OBS settings: {e}"), true, cx);
         }
         cx.notify();
     }
@@ -135,12 +135,12 @@ impl Shell {
                 div()
                     .flex()
                     .flex_col()
-                    .child(ui::title("OBS オーバーレイ"))
-                    .child(ui::sub("配信画面にキー/ボタンの押し込みをライブ表示。ここでの変更は OBS に 1 秒以内で反映されます")),
+                    .child(ui::title("OBS Overlay"))
+                    .child(ui::sub("Live display of key/button presses on your stream. Changes here reach OBS within 1 second")),
             );
 
         // ---------------- プレビュー
-        let modes = ["キーボード", "マウス", "両方"].map(String::from);
+        let modes = ["Keyboard", "Mouse", "Both"].map(String::from);
         let cur_mode = match self.obs_mode {
             Mode::Kb => 0,
             Mode::Mouse => 1,
@@ -157,8 +157,8 @@ impl Shell {
             },
         ));
         let src_name = match self.obs_mode {
-            Mode::Kb => "Device HUB キーボード",
-            Mode::Mouse => "Device HUB マウス",
+            Mode::Kb => "Device HUB Keyboard",
+            Mode::Mouse => "Device HUB Mouse",
             Mode::Both => "Device HUB Live",
         };
         let mut stage = div()
@@ -186,13 +186,13 @@ impl Shell {
                     .object_fit(ObjectFit::Contain),
             );
         }
-        let preview = ui::card_titled("プレビュー", "monitor-play", Some(mode_sw.into_any_element())).child(
+        let preview = ui::card_titled("Preview", "monitor-play", Some(mode_sw.into_any_element())).child(
             ui::body()
                 .pt(px(8.))
                 .gap(px(8.))
                 .child(stage)
                 .child(ui::faint(format!(
-                    "OBS の「ソース追加」→「{src_name}」で追加 (デモの動きです。実際の表示は接続中のデバイスの押し込み)"
+                    "Add it in OBS via \"Add Source\" → \"{src_name}\" (this is a demo animation; the real display shows presses on the connected device)"
                 ))),
         );
 
@@ -253,7 +253,7 @@ impl Shell {
                 .on_click(cx.listener(move |this, _, w, cx| {
                     overlay::pick_color(
                         this,
-                        "アクセント色",
+                        "Accent color",
                         cur_acc,
                         w,
                         cx,
@@ -284,7 +284,7 @@ impl Shell {
                 .items_center()
                 .text_size(px(11.))
                 .text_color(if cur_pre.is_none() { p.accent } else { p.sub })
-                .child("自動")
+                .child("Auto")
                 .on_click(cx.listener(|this, _, _, cx| {
                     this.obs_edit(cx, |c| c.pressed = None);
                 })),
@@ -327,7 +327,7 @@ impl Shell {
                         let base = cur_pre.unwrap_or(Rgb::new(255, 150, 60));
                         overlay::pick_color(
                             this,
-                            "押し込み色",
+                            "Press color",
                             base,
                             w,
                             cx,
@@ -349,15 +349,15 @@ impl Shell {
         let title_in = self.input(
             "obs_title",
             &cfg.title_text,
-            "空欄 = デバイス名",
+            "Blank = device name",
             window,
             cx,
         );
-        let design = ui::card_titled("デザイン", "palette", None).child(
+        let design = ui::card_titled("Design", "palette", None).child(
             ui::body()
                 .child(ui::row_first(
-                    "テーマ",
-                    Some("「背景なし」はキーだけを配信画面に重ねます"),
+                    "Theme",
+                    Some("\"No background\" overlays just the keys on your stream"),
                     div().w(px(360.)).child(ui::segmented(
                         "obs-theme",
                         &themes,
@@ -369,18 +369,18 @@ impl Shell {
                     )),
                 ))
                 .child(ui::row(
-                    "アクセント色",
-                    Some("枠・タイトル・Hz の色。OBS 側のソース設定で色を選ぶとそちらが優先"),
+                    "Accent color",
+                    Some("Color of the frame, title and Hz. A color chosen in the OBS source settings takes priority"),
                     acc_row,
                 ))
                 .child(ui::row(
-                    "押し込み色",
-                    Some("フィル・発光・押下時の輪郭。「自動」はアクセントと同じ"),
+                    "Press color",
+                    Some("Fill, glow and pressed outline. \"Auto\" matches the accent"),
                     pre_row,
                 ))
                 .child(ui::row(
-                    "フィルの方向",
-                    Some("押し込み量の塗り方"),
+                    "Fill direction",
+                    Some("How press depth is filled"),
                     div().w(px(300.)).child(ui::segmented(
                         "obs-fill",
                         &fills,
@@ -392,8 +392,8 @@ impl Shell {
                     )),
                 ))
                 .child(ui::row(
-                    "背景の不透明度",
-                    Some("パネルの透け具合。0% は「背景なし」と同じ"),
+                    "Background opacity",
+                    Some("Panel transparency. 0% is the same as \"No background\""),
                     ui::slider_value(
                         "obs-alpha",
                         cfg.panel_alpha as f32,
@@ -408,8 +408,8 @@ impl Shell {
                     ),
                 ))
                 .child(ui::row(
-                    "発光の強さ",
-                    Some("押したときの外側の光。0 で消灯"),
+                    "Glow strength",
+                    Some("Outer glow when pressed. 0 turns it off"),
                     ui::slider_value(
                         "obs-glow",
                         cfg.glow as f32,
@@ -424,15 +424,15 @@ impl Shell {
                     ),
                 ))
                 .child(ui::row(
-                    "影",
-                    Some("キーとパネルの落ち影"),
+                    "Shadow",
+                    Some("Drop shadow for keys and panel"),
                     ui::toggle("obs-shadow", cfg.shadow, cx, |this, v, cx| {
                         this.obs_edit(cx, |c| c.shadow = v)
                     }),
                 ))
                 .child(ui::row(
-                    "解像度",
-                    Some("OBS で拡大するなら 1.5x / 2x にするとにじみません"),
+                    "Resolution",
+                    Some("Use 1.5x / 2x if you scale it up in OBS to avoid blur"),
                     div().w(px(220.)).child(ui::segmented(
                         "obs-scale",
                         &scales,
@@ -444,7 +444,7 @@ impl Shell {
                     )),
                 ))
                 .child(ui::row(
-                    "マウスの表示",
+                    "Mouse display",
                     None,
                     div().w(px(300.)).child(ui::segmented(
                         "obs-mstyle",
@@ -464,11 +464,11 @@ impl Shell {
             .iter()
             .position(|a| *a == cfg.arrange)
             .unwrap_or(0);
-        let layout_card = ui::card_titled("レイアウト", "layout-dashboard", None).child(
+        let layout_card = ui::card_titled("Layout", "layout-dashboard", None).child(
             ui::body()
                 .child(ui::row_first(
-                    "キーの大きさ",
-                    Some("キー1個のサイズ。解像度はそのままに密度だけ変わります"),
+                    "Key size",
+                    Some("Size of one key. Changes density without changing resolution"),
                     ui::slider_value(
                         "obs-ksize",
                         cfg.key_size,
@@ -483,8 +483,8 @@ impl Shell {
                     ),
                 ))
                 .child(ui::row(
-                    "角丸",
-                    Some("キーとパネルの丸み。0 で四角"),
+                    "Corner radius",
+                    Some("Roundness of keys and panel. 0 for square"),
                     ui::slider_value(
                         "obs-radius",
                         cfg.radius,
@@ -499,15 +499,15 @@ impl Shell {
                     ),
                 ))
                 .child(ui::row(
-                    "余白",
-                    Some("パネル内側の空き"),
+                    "Padding",
+                    Some("Space inside the panel"),
                     ui::slider_value("obs-pad", cfg.pad, 0.5, 2., 0.1, "x", cx, |this, v, cx| {
                         this.obs_edit(cx, |c| c.pad = v);
                     }),
                 ))
                 .child(ui::row(
-                    "配置",
-                    Some("「キー + マウス」統合ソースでの並び"),
+                    "Arrangement",
+                    Some("Order in the combined \"Keys + Mouse\" source"),
                     div().w(px(300.)).child(ui::segmented(
                         "obs-arr",
                         &arranges,
@@ -521,11 +521,11 @@ impl Shell {
         );
 
         // ---------------- 表示するもの
-        let show_card = ui::card_titled("表示するもの", "eye", None).child(
+        let show_card = ui::card_titled("What to show", "eye", None).child(
             ui::body()
                 .child(ui::row_first(
-                    "タイトル (デバイス名)",
-                    Some("右の入力欄で文字を変えられます (空欄 = デバイス名)"),
+                    "Title (device name)",
+                    Some("Change the text in the field on the right (blank = device name)"),
                     div()
                         .flex()
                         .items_center()
@@ -540,29 +540,29 @@ impl Shell {
                         ),
                 ))
                 .child(ui::row(
-                    "キー名・ボタン名",
+                    "Key / button names",
                     None,
                     ui::toggle("obs-labels", cfg.labels, cx, |this, v, cx| {
                         this.obs_edit(cx, |c| c.labels = v)
                     }),
                 ))
                 .child(ui::row(
-                    "設定バッジ (AP/R)",
-                    Some("キー内の作動点・リセットの値 (RT時は押/放の2値)"),
+                    "Setting badges (AP/R)",
+                    Some("Actuation/reset values inside keys (press/release pair in RT)"),
                     ui::toggle("obs-badges", cfg.badges, cx, |this, v, cx| {
                         this.obs_edit(cx, |c| c.badges = v)
                     }),
                 ))
                 .child(ui::row(
-                    "作動点ライン",
-                    Some("キー内の横線。この深さで ON になる位置"),
+                    "Actuation line",
+                    Some("Horizontal line inside the key at the depth where it activates"),
                     ui::toggle("obs-tline", cfg.trigger_line, cx, |this, v, cx| {
                         this.obs_edit(cx, |c| c.trigger_line = v)
                     }),
                 ))
                 .child(ui::row(
-                    "押し込み量の数字",
-                    Some("押している間だけキーの下に深さを表示"),
+                    "Press depth number",
+                    Some("Shows the depth under the key only while pressed"),
                     div()
                         .flex()
                         .items_center()
@@ -594,7 +594,7 @@ impl Shell {
                     dim: !shown,
                     tint: (restricted && cfg.show_keys.contains(&k.id))
                         .then(|| theme::alpha(theme::rgb_of(cur_acc), 0.28)),
-                    badge: (!shown).then(|| "非表示".into()),
+                    badge: (!shown).then(|| "Hidden".into()),
                     ..Default::default()
                 }
             })
@@ -652,7 +652,7 @@ impl Shell {
             .gap(px(6.))
             .child(ui::button(
                 "obs-k-all",
-                "すべて表示",
+                "Show all",
                 Some("eye"),
                 Btn::Ghost,
                 cx,
@@ -685,7 +685,7 @@ impl Shell {
             ))
             .child(ui::button(
                 "obs-k-left",
-                "左半分",
+                "Left half",
                 None,
                 Btn::Ghost,
                 cx,
@@ -696,7 +696,7 @@ impl Shell {
                 let cur_show = cfg.show_keys.clone();
                 ui::button(
                     "obs-k-inv",
-                    "反転",
+                    "Invert",
                     None,
                     Btn::Ghost,
                     cx,
@@ -722,13 +722,13 @@ impl Shell {
                     },
                 )
             });
-        let keys_card = ui::card_titled("表示するキー", "keyboard", Some(key_tools.into_any_element())).child(
+        let keys_card = ui::card_titled("Keys to show", "keyboard", Some(key_tools.into_any_element())).child(
             ui::body()
                 .pt(px(10.))
                 .gap(px(8.))
                 .child(view)
                 .child(ui::faint(format!(
-                    "クリックで表示するキーを選択/解除 ({n_shown}/{} キー表示中。未選択 = すべて表示)。表示するキーだけにオーバーレイは切り詰められます",
+                    "Click to select/deselect keys to show ({n_shown}/{} keys shown; none selected = show all). The overlay is cropped to just the shown keys",
                     ids.len()
                 ))),
         );
@@ -783,13 +783,13 @@ impl Shell {
                     })),
             );
         }
-        let btn_card = ui::card_titled("表示するマウスボタン", "mouse", None).child(
+        let btn_card = ui::card_titled("Mouse buttons to show", "mouse", None).child(
             ui::body()
                 .pt(px(8.))
                 .gap(px(8.))
                 .child(chips)
                 .child(ui::faint(
-                    "押し込み深さを測れるボタン (磁気スイッチ) だけが並びます。クリックで切り替え",
+                    "Only buttons that can measure press depth (magnetic switches) are listed. Click to toggle",
                 )),
         );
 
@@ -824,15 +824,15 @@ impl Shell {
                         .child(t.to_string()),
                 )
         };
-        let howto = ui::card_titled("OBS への追加", "badge-info", None).child(
+        let howto = ui::card_titled("Adding to OBS", "badge-info", None).child(
             ui::body()
                 .pt(px(8.))
                 .gap(px(10.))
-                .child(step("1", "devhub_obs.dll を C:\\ProgramData\\obs-studio\\plugins\\devhub_obs\\bin\\64bit\\ に置いて OBS を起動"))
-                .child(step("2", "ソース追加 →「Device HUB キーボード」「Device HUB マウス」を別々に追加 (両方を 1 枚にするなら「Device HUB Live」)"))
-                .child(step("3", "見た目と表示キーはこの画面で変更 — 全ソースに即反映。ソースのプロパティ側でも表示するキー/ボタンを選べます"))
-                .child(step("4", "Device HUB 本体は閉じていても OK (OBS プラグインが直接デバイスを読みます)"))
-                .child(div().min_w_0().child(ui::faint(format!("設定ファイル: {path}")))),
+                .child(step("1", "Put devhub_obs.dll in C:\\ProgramData\\obs-studio\\plugins\\devhub_obs\\bin\\64bit\\ and start OBS"))
+                .child(step("2", "Add Source → add \"Device HUB Keyboard\" and \"Device HUB Mouse\" separately (use \"Device HUB Live\" for both in one)"))
+                .child(step("3", "Change the look and shown keys on this page — applies to all sources instantly. You can also pick shown keys/buttons in the source properties"))
+                .child(step("4", "Device HUB itself can be closed (the OBS plugin reads the device directly)"))
+                .child(div().min_w_0().child(ui::faint(format!("Settings file: {path}")))),
         );
 
         div()

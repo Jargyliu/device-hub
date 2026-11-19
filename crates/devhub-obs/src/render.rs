@@ -174,11 +174,11 @@ impl Vis {
 
 /// アクセント色の選択肢 (名前, RGBA)。OBS プロパティの val は index 文字列。
 pub const ACCENTS: &[(&str, Rgba)] = &[
-    ("シアン", [60, 190, 255, 255]),
-    ("オレンジ", [255, 150, 60, 255]),
-    ("マゼンタ", [255, 90, 190, 255]),
-    ("ライム", [120, 230, 120, 255]),
-    ("バイオレット", [170, 120, 255, 255]),
+    ("Cyan", [60, 190, 255, 255]),
+    ("Orange", [255, 150, 60, 255]),
+    ("Magenta", [255, 90, 190, 255]),
+    ("Lime", [120, 230, 120, 255]),
+    ("Violet", [170, 120, 255, 255]),
 ];
 
 /// テーマごとの配色。
@@ -860,8 +860,8 @@ fn lr_index(m: &MouseLive) -> (Option<usize>, Option<usize>) {
         })
     };
     let n = m.depths.len();
-    let l = find(&["左", "left"]).or((n > 0).then_some(0));
-    let r = find(&["右", "right"]).or((n > 1).then_some(1));
+    let l = find(&["Left", "left"]).or((n > 0).then_some(0));
+    let r = find(&["Right", "right"]).or((n > 1).then_some(1));
     (l, r)
 }
 
@@ -1338,9 +1338,9 @@ fn draw_layer(live: &Live, font: Option<&fontdue::Font>, mode: Mode, vis: &Vis, 
     if !has_kb && !has_mouse {
         let msg = if live.status.is_empty() {
             match mode {
-                Mode::Kb => "キーボードを探しています…",
-                Mode::Mouse => "マウスを探しています…",
-                Mode::Both => "デバイスを探しています…",
+                Mode::Kb => "Looking for a keyboard…",
+                Mode::Mouse => "Looking for a mouse…",
+                Mode::Both => "Looking for devices…",
             }
             .to_string()
         } else {

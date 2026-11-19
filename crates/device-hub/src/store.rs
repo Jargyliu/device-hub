@@ -234,7 +234,7 @@ pub fn connect_backend() -> (Arc<dyn HubBackend>, bool) {
     if !force_demo {
         match devhub_hid::connect() {
             Ok(b) => return (b, false),
-            Err(e) => eprintln!("[devhub] HID を開けませんでした ({e}) — デモで起動します"),
+            Err(e) => eprintln!("[devhub] Could not open HID ({e}) — starting in demo mode"),
         }
     }
     (Arc::new(devhub_core::demo::DemoHub::new()), true)
@@ -335,7 +335,7 @@ impl Hub {
                 status: if supported {
                     Status::Opening
                 } else {
-                    Status::Failed("このデバイスのドライバはまだ実装されていません".into())
+                    Status::Failed("The driver for this device is not implemented yet".into())
                 },
                 pending: 0,
                 running: None,
@@ -645,7 +645,7 @@ impl Hub {
             }
             Msg::Scanned { res: Err(e), .. } => {
                 self.scanned = true;
-                Some((format!("デバイスの列挙に失敗: {e}"), true))
+                Some((format!("Failed to enumerate devices: {e}"), true))
             }
             Msg::Opened { id, info, caps } => {
                 if let Some(s) = self.sessions.get_mut(&id) {
@@ -705,7 +705,7 @@ impl Hub {
                         for (i, id2) in pc.switch_ids.iter().enumerate() {
                             if let Some(n) = names.get(id2) {
                                 if let Some(slot) = pc.switch_types.get_mut(i) {
-                                    *slot = format!("{n} (軸 {id2})");
+                                    *slot = format!("{n} (axis {id2})");
                                 }
                             }
                         }
@@ -735,7 +735,7 @@ impl Hub {
                     s.status = Status::Ready;
                     if s.read_notify {
                         s.read_notify = false;
-                        return Some((format!("{} の設定を読み込みました", s.info.name), false));
+                        return Some((format!("Loaded settings for {}", s.info.name), false));
                     }
                 }
                 None
@@ -747,7 +747,7 @@ impl Hub {
                         s.status = Status::Failed(err.clone());
                     }
                 }
-                Some((format!("読み込みに失敗: {err}"), true))
+                Some((format!("Failed to load: {err}"), true))
             }
             Msg::DirectDrive { id, err } => {
                 let s = self.sessions.get_mut(&id)?;
@@ -756,13 +756,13 @@ impl Hub {
                     s.dd_on = false;
                     let _ = s.tx.send(Job::DdStop);
                     send_read(s);
-                    return Some((format!("実機プレビューに失敗: {e}"), true));
+                    return Some((format!("Device preview failed: {e}"), true));
                 }
                 None
             }
             Msg::DdStopFailed { id, err } => {
                 self.sessions.get(&id)?;
-                Some((format!("DirectDrive 停止後の点灯復元に失敗: {err}"), true))
+                Some((format!("Failed to restore lighting after stopping DirectDrive: {err}"), true))
             }
             Msg::LiveLight { id, colors } => {
                 if let Some(s) = self.sessions.get_mut(&id) {
@@ -780,7 +780,7 @@ impl Hub {
                 s.travel_on = false;
                 s.travel.clear();
                 s.axis.clear();
-                Some(("ライブ測定がデバイス側で停止しました".into(), true))
+                Some(("Live measurement was stopped by the device".into(), true))
             }
             Msg::Applied { id, err } => {
                 let s = self.sessions.get_mut(&id)?;
@@ -789,7 +789,7 @@ impl Hub {
                 if let Some(e) = err {
                     // 実機の値へ戻す。
                     send_read(s);
-                    return Some((format!("書き込みに失敗: {e}"), true));
+                    return Some((format!("Write failed: {e}"), true));
                 }
                 None
             }
@@ -803,7 +803,7 @@ impl Hub {
                     s.state = None;
                     s.switch_failed = true;
                     send_read(s);
-                    return Some((format!("構成の切替に失敗: {e}"), true));
+                    return Some((format!("Failed to switch configuration: {e}"), true));
                 }
                 None
             }
@@ -817,7 +817,7 @@ impl Hub {
                         }
                         Some((
                             o.message
-                                .unwrap_or_else(|| format!("{label}: 完了しました")),
+                                .unwrap_or_else(|| format!("{label}: done")),
                             false,
                         ))
                     }
@@ -832,7 +832,7 @@ impl Hub {
                         if p <= 15 && !battery.charging && !s.low_battery_warned {
                             s.low_battery_warned = true;
                             warn = Some((
-                                format!("{} のバッテリー残量が {p}% です", s.info.name),
+                                format!("{} battery is at {p}%", s.info.name),
                                 true,
                             ));
                         }
@@ -876,7 +876,7 @@ impl Hub {
                     Ok(st) => st,
                     Err(e) => {
                         // 手動確認の失敗は報告、自動確認の失敗は静かに捨てる。
-                        return manual.then(|| (format!("ファームウェアの確認に失敗: {e}"), true));
+                        return manual.then(|| (format!("Firmware check failed: {e}"), true));
                     }
                 };
                 let s = self.sessions.get(&id)?;
@@ -896,16 +896,16 @@ impl Hub {
                 let fresh = st.new_available;
                 self.fw_status.insert(id, st);
                 if !fresh {
-                    return manual.then(|| (format!("{name} のファームウェアは最新です"), false));
+                    return manual.then(|| (format!("{name} firmware is up to date"), false));
                 }
                 if self.fw_native {
                     let _ = notify_rust::Notification::new()
                         .summary("Device HUB")
-                        .body(&format!("{name} の新しいファームウェアが公開されています"))
+                        .body(&format!("New firmware is available for {name}"))
                         .show();
                 }
                 Some((
-                    format!("{name} の新しいファームウェアが公開されています"),
+                    format!("New firmware is available for {name}"),
                     false,
                 ))
             }
@@ -1094,7 +1094,7 @@ fn worker(
                                 matches!(e, devhub_core::backend::HubError::Disconnected),
                             ),
                         },
-                        None => (Some("デバイスが開かれていません".into()), false),
+                        None => (Some("No device is open".into()), false),
                     };
                     if dead {
                         backend.invalidate(&id);
@@ -1128,7 +1128,7 @@ fn worker(
                                 matches!(e, devhub_core::backend::HubError::Disconnected),
                             ),
                         },
-                        None => (Some("デバイスが開かれていません".into()), false),
+                        None => (Some("No device is open".into()), false),
                     };
                     if dead {
                         backend.invalidate(&id);
@@ -1152,7 +1152,7 @@ fn worker(
                                 matches!(e, devhub_core::backend::HubError::Disconnected),
                             ),
                         },
-                        None => (Err("デバイスが開かれていません".into()), false),
+                        None => (Err("No device is open".into()), false),
                     };
                     if dead {
                         backend.invalidate(&id);
@@ -1185,7 +1185,7 @@ fn worker(
                 Job::DirectDrive { cells } => {
                     let err = match &driver {
                         Some(d) => d.direct_drive(0, &cells).err().map(|e| e.to_string()),
-                        None => Some("デバイスが開かれていません".into()),
+                        None => Some("No device is open".into()),
                     };
                     send(Msg::DirectDrive {
                         id: id.clone(),
@@ -1569,16 +1569,16 @@ pub fn snapshot_changes(caps: &Capabilities, st: &DeviceState) -> Vec<Change> {
 /// `Err` = 別機種向けなどで適用不可。`Ok(Some(msg))` = 警告付きで適用できる。
 pub fn state_compatible(caps: &Capabilities, st: &DeviceState) -> Result<Option<String>, String> {
     if st.keyboard.is_some() && caps.keyboard.is_none() {
-        return Err("キーボード向けの設定ファイルです".into());
+        return Err("This settings file is for a keyboard".into());
     }
     if st.mouse.is_some() && caps.mouse.is_none() {
-        return Err("マウス向けの設定ファイルです".into());
+        return Err("This settings file is for a mouse".into());
     }
     if let Some(bands) = &st.peq {
         match &caps.peq {
             Some(pc) if bands.len() == pc.bands as usize => {}
-            Some(_) => return Err("EQ のバンド数が合いません".into()),
-            None => return Err("EQ 対応デバイスの設定ファイルです".into()),
+            Some(_) => return Err("EQ band count does not match".into()),
+            None => return Err("This settings file is for an EQ device".into()),
         }
     }
     // そのままでは使えない項目を数える (diff_changes が実際に落とす分)。
@@ -1600,7 +1600,7 @@ pub fn state_compatible(caps: &Capabilities, st: &DeviceState) -> Result<Option<
         }
     }
     if ignored > 0 {
-        Ok(Some(format!("{ignored} 件の未対応設定は無視されます")))
+        Ok(Some(format!("{ignored} unsupported settings will be ignored")))
     } else {
         Ok(None)
     }
@@ -1720,14 +1720,14 @@ mod worker_queue_tests {
         assert_ne!(
             p1.keyboard.as_ref().unwrap().keymap[0][0],
             KeyAction::Code(0x1234),
-            "構成 1 に構成 0 の変更が漏れている"
+            "Config 0 changes leaked into config 1"
         );
         driver.apply(&Change::Profile(0)).unwrap();
         let p0 = driver.read().unwrap();
         assert_eq!(
             p0.keyboard.as_ref().unwrap().keymap[0][0],
             KeyAction::Code(0x1234),
-            "構成 0 の変更が失われた"
+            "Config 0 changes were lost"
         );
     }
 
@@ -1786,7 +1786,7 @@ mod worker_queue_tests {
         assert_eq!(
             hub.session(&id).unwrap().pending,
             pending,
-            "切替中の編集がワーカーへ流れた"
+            "Edits made while switching reached the worker"
         );
         assert!(drain_until(
             &mut hub,
@@ -1831,7 +1831,7 @@ mod worker_queue_tests {
         let changes = diff_changes(&caps, &cur, &target);
         assert!(
             changes.iter().all(|c| !matches!(c, Change::Profile(_))),
-            "構成切替が差分として出た — 切替前の差分を切替後の構成へ書いてしまう"
+            "Config switch showed up as a diff — would write the pre-switch diff into the new config"
         );
         assert_eq!(
             changes
@@ -1839,7 +1839,7 @@ mod worker_queue_tests {
                 .filter(|c| matches!(c, Change::ProfileName { .. }))
                 .count(),
             4,
-            "プロファイル名の差分が出ていない"
+            "Profile name diff is missing"
         );
     }
 
@@ -1966,7 +1966,7 @@ mod worker_queue_tests {
                 .profile
                 .names[0],
             "RENAMED",
-            "古い読み込み応答で確定待ちの編集が巻き戻った"
+            "A stale load response rolled back pending edits"
         );
         drain_until(&mut hub, &mut rx, Duration::from_secs(5), |h| {
             h.session(&id).is_some_and(|s| s.pending_changes.is_empty())

@@ -39,26 +39,26 @@ impl FxMode {
     ];
     pub fn label(self) -> &'static str {
         match self {
-            FxMode::Depth => "押し込み深度",
-            FxMode::Heat => "打鍵ヒートマップ",
-            FxMode::Focus => "キー強調",
-            FxMode::Ripple => "波紋",
-            FxMode::Status => "ステータス",
-            FxMode::Audio => "オーディオ",
-            FxMode::AppFocus => "アプリ連携",
+            FxMode::Depth => "Press Depth",
+            FxMode::Heat => "Keystroke Heatmap",
+            FxMode::Focus => "Key Highlight",
+            FxMode::Ripple => "Ripple",
+            FxMode::Status => "Status",
+            FxMode::Audio => "Audio",
+            FxMode::AppFocus => "App Link",
         }
     }
     pub fn desc(self) -> &'static str {
         match self {
             FxMode::Depth => {
-                "押した深さで色と明るさが連続的に変わる。作動点を越えると色が切り替わる"
+                "Color and brightness change continuously with press depth; the color switches past the actuation point"
             }
-            FxMode::Heat => "打鍵回数を数えて色に。よく使うキーほど赤く (リセット可)",
-            FxMode::Focus => "WASD などゲームで使うキーだけ点灯。押すと光る",
-            FxMode::Ripple => "押したキーから波紋が広がる。深く押すほど強く速い",
-            FxMode::Status => "CapsLock やワイヤレス機の電池低下を点灯に重ねる (ハイブリッド推奨)",
-            FxMode::Audio => "再生中の音に合わせてスペクトルをキーボードに表示",
-            FxMode::AppFocus => "前面のアプリを検知して強調するキーを自動で切り替え",
+            FxMode::Heat => "Counts keystrokes and maps them to color. Most-used keys glow red (resettable)",
+            FxMode::Focus => "Lights only the keys you use in games, like WASD. They glow when pressed",
+            FxMode::Ripple => "Ripples spread from the pressed key. Deeper presses are stronger and faster",
+            FxMode::Status => "Overlays Caps Lock and wireless low-battery indicators on the lighting (Hybrid recommended)",
+            FxMode::Audio => "Shows a spectrum of the playing audio on the keyboard",
+            FxMode::AppFocus => "Detects the foreground app and switches the highlighted keys automatically",
         }
     }
     pub fn icon(self) -> &'static str {
@@ -133,7 +133,7 @@ impl Default for FxPrefs {
 }
 
 /// キー強調のプリセット (刻印ラベル)。
-pub const FOCUS_PRESETS: [&str; 4] = ["FPS", "WASD", "MOBA", "数字列"];
+pub const FOCUS_PRESETS: [&str; 4] = ["FPS", "WASD", "MOBA", "Number row"];
 
 pub fn focus_preset(name: &str) -> Vec<String> {
     let v: &[&str] = match name {
@@ -141,7 +141,7 @@ pub fn focus_preset(name: &str) -> Vec<String> {
         "MOBA" => &[
             "Q", "W", "E", "R", "D", "F", "1", "2", "3", "4", "5", "6", "B", "Tab",
         ],
-        "数字列" => &["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+        "Number row" => &["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
         _ => &[
             "W", "A", "S", "D", "Q", "E", "R", "F", "C", "X", "G", "Z", "1", "2", "3", "4",
             "Shift", "LShift", "Ctrl", "LCtrl", "Space", "Tab", "Esc",

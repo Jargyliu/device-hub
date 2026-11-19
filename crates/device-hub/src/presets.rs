@@ -80,7 +80,7 @@ pub fn list(model: &str) -> Vec<Preset> {
 }
 
 pub fn save(model: &str, name: &str, st: &DeviceState) -> Result<(), String> {
-    let d = dir(model).ok_or("保存先が見つかりません")?;
+    let d = dir(model).ok_or("Save location not found")?;
     std::fs::create_dir_all(&d).map_err(|e| e.to_string())?;
     let s = serde_json::to_string_pretty(st).map_err(|e| e.to_string())?;
     crate::atomic::write(&d.join(file_name(name)), &s).map_err(|e| e.to_string())

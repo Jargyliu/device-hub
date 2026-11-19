@@ -192,7 +192,7 @@ impl Shell {
             .gap(px(14.))
             .pt(px(10.))
             .pb(px(4.))
-            .child(ui::faint("ライブ"))
+            .child(ui::faint("Live"))
             .children(["L", "R"].iter().enumerate().map(|(i, n)| {
                 let b = btns.get(i).copied().unwrap_or_default();
                 let on = b.pressed.unwrap_or(false);
@@ -324,7 +324,7 @@ impl Shell {
                     .child(ui::faint(n.to_string()))
                     .child(ui::big_number(format!("{}", s.count), 26.))
                     .child(ui::faint(match s.last_gap {
-                        Some(g) => format!("間隔 {g}ms · 最短 {}ms", s.min_gap.unwrap_or(g)),
+                        Some(g) => format!("Interval {g}ms · shortest {}ms", s.min_gap.unwrap_or(g)),
                         None => "—".into(),
                     }))
                     .when(warn, |d| {
@@ -332,7 +332,7 @@ impl Shell {
                             div()
                                 .text_size(px(11.))
                                 .text_color(p.danger)
-                                .child(format!("チャタリング疑い {} 回", s.chatter)),
+                                .child(format!("Possible chatter {} times", s.chatter)),
                         )
                     }),
             );
@@ -351,9 +351,9 @@ impl Shell {
             .justify_center()
             .gap(px(6.))
             .child(ui::icon("mouse-pointer-click", 26., p.accent))
-            .child(ui::sub("この枠の中でクリック・ホイール・移動をしてください"))
+            .child(ui::sub("Click, scroll and move inside this box"))
             .child(ui::faint(format!(
-                "ホイール ↑{} ↓{} · 移動イベント {} /秒 (最大 {}) — 移動の値は OS が間引くので参考値",
+                "Wheel ↑{} ↓{} · motion events {}/s (max {}) — motion values are approximate because the OS thins them out",
                 self.test.wheel_up, self.test.wheel_down, rate, self.test.move_peak
             )))
             .on_any_mouse_down(cx.listener(|this, e: &MouseDownEvent, _, cx| {
@@ -388,7 +388,7 @@ impl Shell {
             }));
         let reset = ui::button(
             "test-reset-m",
-            "リセット",
+            "Reset",
             Some("rotate-ccw"),
             Btn::Ghost,
             cx,
@@ -401,7 +401,7 @@ impl Shell {
                 cx.notify();
             },
         );
-        let clicks = ui::card_titled("クリック / ホイール テスト", "mouse-pointer-click", Some(reset.into_any_element())).child(
+        let clicks = ui::card_titled("Click / Wheel Test", "mouse-pointer-click", Some(reset.into_any_element())).child(
             ui::body()
                 .gap(px(12.))
                 .pt(px(8.))
@@ -409,7 +409,7 @@ impl Shell {
                 .child(pad)
                 .child(stats)
                 .child(ui::faint(format!(
-                    "{CHATTER_MS}ms 未満の連続入力をチャタリングの疑いとして数えます。増える場合は「性能」タブのデバウンスを長くしてください。"
+                    "Repeated inputs under {CHATTER_MS}ms are counted as possible chatter. If it keeps rising, increase the debounce in the Performance tab."
                 ))),
         );
         let mut col = div().flex().flex_col().gap(px(theme::GAP)).child(clicks);
@@ -490,7 +490,7 @@ impl Shell {
                 Some(
                     ui::button(
                         "usb-stop",
-                        "停止",
+                        "Stop",
                         Some("square"),
                         Btn::Ghost,
                         cx,
@@ -507,7 +507,7 @@ impl Shell {
                 Some(
                     ui::button(
                         "usb-start",
-                        "計測開始",
+                        "Start measuring",
                         Some("play"),
                         Btn::Ghost,
                         cx,
@@ -523,9 +523,9 @@ impl Shell {
             (!keyboard)
                 .then(|| {
                     let label = if measuring {
-                        "計測中…"
+                        "Measuring…"
                     } else {
-                        "5 秒間計測"
+                        "Measure for 5 seconds"
                     };
                     ui::button(
                         "poll-measure",
@@ -559,8 +559,8 @@ impl Shell {
             col = col.child(ui::segmented(
                 "meas-method",
                 &[
-                    "OS 配信 (Raw Input)".to_string(),
-                    "USB 転送 (USBPcap)".to_string(),
+                    "OS delivery (Raw Input)".to_string(),
+                    "USB transfers (USBPcap)".to_string(),
                 ],
                 method,
                 cx,
@@ -582,46 +582,46 @@ impl Shell {
                         )
                         .child(ui::faint(if bg {
                             format!(
-                                "背面の受信 {:.0} 件/秒 · Windows が入力をまとめるため参考値です",
+                                "Background receive {:.0}/s · approximate because Windows batches input",
                                 st.hz
                             )
                         } else if big < 1. {
                             if keyboard {
-                                "— キーを押すと計測されます".to_string()
+                                "— measured while you press keys".to_string()
                             } else {
-                                "— マウスを動かすと計測されます".to_string()
+                                "— measured while you move the mouse".to_string()
                             }
                         } else if keyboard {
-                            "(キーイベント数/秒 — 設定ポーリングとは別物)".to_string()
+                            "(key events/s — not the configured polling rate)".to_string()
                         } else {
-                            let mut s = format!("ピーク · 平均 {:.0}", st.hz);
+                            let mut s = format!("Peak · avg {:.0}", st.hz);
                             if let Some(seg) = st.seg_hz {
-                                s = format!("{s} · 現在 {seg:.0}");
+                                s = format!("{s} · now {seg:.0}");
                             }
-                            format!("{s} (動いている区間)")
+                            format!("{s} (while moving)")
                         })),
                 )
                 .child(spark)
                 .when_some(st.gap_stats, |d, (med, p95)| {
                     // 中央値ベースの実測 — 個数/秒より取りこぼしに強い。
                     // 8K が効いていれば ~0.125ms (=8000Hz) 付近に出る。
-                    let mut line = format!("配信間隔の中央値 {med:.3} ms → ~{:.0} Hz", 1000. / med);
+                    let mut line = format!("Median delivery interval {med:.3} ms → ~{:.0} Hz", 1000. / med);
                     if let Some(g) = min_gap {
-                        line = format!("{line} · 最小 {g:.2} ms");
+                        line = format!("{line} · min {g:.2} ms");
                     }
                     if p95 > med * 2. {
-                        line = format!("{line} · p95 {p95:.2} ms (ばらつき大)");
+                        line = format!("{line} · p95 {p95:.2} ms (high jitter)");
                     }
                     d.child(ui::faint(line))
                 })
                 .when(st.gap_stats.is_none(), |d| {
                     d.when_some(min_gap, |d, g| {
                         d.child(ui::faint(format!(
-                            "{}{:.2} ms → ~{:.0} Hz 相当",
+                            "{}{:.2} ms → ~{:.0} Hz equivalent",
                             if keyboard {
-                                "最小イベント間隔 "
+                                "Min event interval "
                             } else {
-                                "最小レポート間隔 "
+                                "Min report interval "
                             },
                             g,
                             1000. / g
@@ -632,10 +632,10 @@ impl Shell {
             // ほとんどが ±1 カウントなら DPI か速度が足りずレポートが間引かれている。
             if !keyboard {
                 col = col.when_some(st.counts_per_sec, |d, c| {
-                    let mut line = format!("移動量 {c:.0}/秒 → この速度・DPI の上限 ≒ {c:.0} Hz");
+                    let mut line = format!("Motion {c:.0}/s → limit at this speed/DPI ≈ {c:.0} Hz");
                     if st.low_frac.is_some_and(|f| f > 0.5) {
                         line = format!(
-                            "{line} (ほぼ1カウント/レポート — DPI を上げて速く動かすと伸びます)"
+                            "{line} (about 1 count per report — raise DPI and move faster to go higher)"
                         );
                     }
                     d.child(ui::faint(line))
@@ -655,37 +655,37 @@ impl Shell {
                     div()
                         .text_size(px(12.))
                         .text_color(p.accent)
-                        .child(format!("計測中 — カーソルは窓内に固定されています。窓の中で速く大きな円を描いてください (残り {left:.1} 秒)")),
+                        .child(format!("Measuring — the cursor is locked inside the window. Draw fast, large circles inside it ({left:.1} s left)")),
                 );
             } else if let Some((_, result)) =
                 self.poll_meas_result.as_ref().filter(|(rid, _)| rid == &id)
             {
                 let mut line = match result.peak_hz {
-                    Some(peak) => format!("計測結果: ピーク {peak:.0} Hz"),
-                    None => "計測結果: 100 ms 以上連続した移動を検出できませんでした".to_string(),
+                    Some(peak) => format!("Result: peak {peak:.0} Hz"),
+                    None => "Result: no continuous motion of 100 ms or longer was detected".to_string(),
                 };
                 if let Some((med, _)) = result.gap_stats {
-                    line = format!("{line} · 直近の配信間隔中央値 {med:.3} ms");
+                    line = format!("{line} · recent median delivery interval {med:.3} ms");
                 }
                 if let Some(cnt) = result.counts_per_sec {
-                    line = format!("{line} · 移動量 {cnt:.0}/秒");
+                    line = format!("{line} · motion {cnt:.0}/s");
                 }
                 col = col.child(div().text_size(px(12.)).text_color(p.accent).child(line));
             }
             // USB 計測が裏で動いているなら方式切替で戻れる旨を出す。
             if usb_running {
                 col = col.child(ui::faint(
-                    "USB 計測は実行中です — 「USB 転送」で現在値と停止が出ます",
+                    "USB measurement is running — \"USB transfers\" shows the current value and Stop",
                 ));
             }
             col = col.child(ui::faint(if keyboard {
-                "OS に到達したキーボード input report の実測です。キー状態が変わるたびに report が来るため、入力中のみカウントされます (idle 中のポーリングは OS には届きません)。"
+                "Measured keyboard input reports reaching the OS. A report arrives whenever key state changes, so it only counts while typing (idle polling never reaches the OS)."
             } else {
-                "計測元: OS 配信 (Raw Input)。マウスは動いた分しか report を送らないため、「ピーク」が実際のポーリングに最も近い値です。正確に見るには DPI を 3200 以上にして速く大きく円を描いてください。"
+                "Source: OS delivery (Raw Input). A mouse only sends reports when it moves, so \"Peak\" is the closest to the real polling rate. For accuracy, set DPI to 3200 or higher and draw fast, large circles."
             }));
         }
         Some(
-            ui::card_titled("ポーリング実測", "gauge", meas_btn)
+            ui::card_titled("Measured Polling", "gauge", meas_btn)
                 .child(col)
                 .into_any_element(),
         )
@@ -710,15 +710,15 @@ impl Shell {
                 .unwrap();
             let (big, note) = match snap.status {
                 Status::Waiting => (
-                    "待機中".to_string(),
-                    "対象の転送をまだ受けていません — 対象デバイスを操作してください".to_string(),
+                    "Waiting".to_string(),
+                    "No target transfers received yet — use the target device".to_string(),
                 ),
                 Status::Live => (
                     format!("{} Hz", snap.hz),
                     if snap.hz == 0 {
-                        "直近 1 秒は転送なし (静止中)".to_string()
+                        "No transfers in the last second (idle)".to_string()
                     } else {
-                        "直近 1 秒の USB 転送数".to_string()
+                        "USB transfers in the last second".to_string()
                     },
                 ),
                 st => (usb_status_reason(st).0, String::new()),
@@ -733,12 +733,12 @@ impl Shell {
                         .when(!note.is_empty(), |d| d.child(ui::faint(note))),
                 )
                 .child(ui::faint(format!(
-                    "対象: {} · 期間内の最高 {} Hz (連続 1 秒)",
+                    "Target: {} · highest in period {} Hz (1 s continuous)",
                     target_spec(&target),
                     snap.peak_hz
                 )))
                 .child(ui::faint(
-                    "計測元: USB 転送 (USBPcap)。窓を最小化しても続きます — ゲームなど別アプリを前面にして動かしてください (終了すると計測は止まります)。",
+                    "Source: USB transfers (USBPcap). Keeps running when minimized — bring a game or other app to the front and move (stops when you quit).",
                 ));
         }
         if self.usb_cap.as_ref().is_some_and(|(cid, _)| cid != id) {
@@ -747,9 +747,9 @@ impl Shell {
                 .as_ref()
                 .and_then(|(cid, _)| self.hub.session(cid))
                 .map(|s| s.info.name.clone())
-                .unwrap_or_else(|| "別デバイス".into());
+                .unwrap_or_else(|| "Other device".into());
             return col.child(ui::faint(format!(
-                "{name} で USB 計測中です — そのデバイスの画面で停止できます"
+                "USB measurement running on {name} — stop it from that device's page"
             )));
         }
         // 対象デバイスの選択 — 製品名・接続場所から選ぶ。列挙は権限不要で、
@@ -807,7 +807,7 @@ impl Shell {
                             ))),
                     )
                     .child(ui::faint(if d.hub == 0 {
-                        "ハブ不明 — 手入力".to_string()
+                        "Hub unknown — enter manually".to_string()
                     } else {
                         format!("USBPcap{} addr {}", d.hub, d.address)
                     }));
@@ -825,9 +825,9 @@ impl Shell {
             }
             if hidden > 0 {
                 let toggle = if show_all {
-                    format!("その他のデバイス {hidden} 台を隠す")
+                    format!("Hide {hidden} other devices")
                 } else {
-                    format!("その他のデバイス {hidden} 台を表示")
+                    format!("Show {hidden} other devices")
                 };
                 list = list.child(
                     div()
@@ -848,10 +848,10 @@ impl Shell {
                         .flex()
                         .items_center()
                         .justify_between()
-                        .child(ui::faint("対象デバイス".to_string()))
+                        .child(ui::faint("Target devices".to_string()))
                         .child(ui::button(
                             "usb-dev-refresh",
-                            "更新",
+                            "Update",
                             Some("refresh-cw"),
                             Btn::Ghost,
                             cx,
@@ -874,7 +874,7 @@ impl Shell {
                     .gap(px(10.))
                     .child(ui::button(
                         "usb-ep-scan",
-                        if scanning { "検出中…" } else { "EP 自動検出" },
+                        if scanning { "Detecting…" } else { "Auto-detect EP" },
                         Some("search"),
                         Btn::Ghost,
                         cx,
@@ -884,9 +884,9 @@ impl Shell {
                         },
                     ))
                     .child(ui::faint(if scanning {
-                        "対象デバイスを操作してください (3 秒)".to_string()
+                        "Use the target device (3 seconds)".to_string()
                     } else {
-                        "EP は転送数の多いものを採用".to_string()
+                        "Picks the EP with the most transfers".to_string()
                     })),
             )
             .when_some(self.usb_scan_msg.as_ref(), |d, m| {
@@ -970,13 +970,13 @@ impl Shell {
                 div()
                     .flex()
                     .gap(px(14.))
-                    .child(field("ハブ番号", &hub_in))
-                    .child(field("USB アドレス", &addr_in))
-                    .child(field("IN EP 番号", &ep_in))
+                    .child(field("Hub number", &hub_in))
+                    .child(field("USB address", &addr_in))
+                    .child(field("IN EP number", &ep_in))
                     .child(field("Report ID", &rid_in)),
             )
             .child(ui::faint(
-                "対象の値は USBPcap や Wireshark のキャプチャ設定で確認します。EP は番号だけ (0x81 → 1)、Report ID -1 は全件。アドレスは抜き差しで変わります。",
+                "Find these values in USBPcap or Wireshark capture settings. EP is the number only (0x81 → 1); Report ID -1 means all. The address changes when replugged.",
             ));
         // 直近の結果 (開始したデバイスに紐付く — 選択を変えても別個体には移らない)。
         if let Some((_, target, snap)) = self.usb_result.as_ref().filter(|(rid, ..)| rid == id) {
@@ -990,7 +990,7 @@ impl Shell {
                     div()
                         .text_size(px(12.))
                         .text_color(p.accent)
-                        .child(format!("計測結果: 最高 {} Hz (連続 1 秒)", snap.peak_hz)),
+                        .child(format!("Result: max {} Hz (1 s continuous)", snap.peak_hz)),
                 );
             }
             let name = self
@@ -999,12 +999,12 @@ impl Shell {
                 .map(|s| s.info.name.clone())
                 .unwrap_or_default();
             col = col.child(ui::faint(format!(
-                "対象: {name} — {} · 計測元: USB 転送 (USBPcap)",
+                "Target: {name} — {} · Source: USB transfers (USBPcap)",
                 target_spec(target)
             )));
         }
         col.child(ui::faint(
-            "計測元: USB 転送 (USBPcap) — デバイス→PC の interrupt IN 完了数を直近 1 秒で数えます。OS の配信制限を受けないため、ゲームを前面にしたまま計れます。",
+            "Source: USB transfers (USBPcap) — counts device→PC interrupt IN completions over the last second. Not limited by OS delivery, so you can measure with a game in the foreground.",
         ))
     }
 
@@ -1019,7 +1019,7 @@ impl Shell {
                     .and_then(|c| c.mouse.as_ref())
                     .and_then(|m| m.buttons.get(i))
                     .map(|b| b.name.clone())
-                    .unwrap_or_else(|| format!("ボタン {i}"))
+                    .unwrap_or_else(|| format!("Button {i}"))
             })
             .collect();
         let btns = self.cur().map(|s| s.buttons.clone()).unwrap_or_default();
@@ -1069,7 +1069,7 @@ impl Shell {
                 )
                 .child(ui::big_number(format!("{:.0}", b.depth * 100.), 20.))
                 .child(ui::faint(format!(
-                    "最大 {:.0}% · 作動 {}",
+                    "Max {:.0}% · act {}",
                     self.test.btn_peak.get(i).copied().unwrap_or(0.) * 100.,
                     self.test.btn_presses.get(i).copied().unwrap_or(0)
                 )))
@@ -1107,7 +1107,7 @@ impl Shell {
         )
         .h(px(80.))
         .w_full();
-        ui::card_titled("ボタンの押下深さ", "activity", None)
+        ui::card_titled("Button Press Depth", "activity", None)
             .child(
                 ui::body().gap(px(12.)).pt(px(10.)).pb(px(16.)).child(
                     div()
@@ -1125,9 +1125,9 @@ impl Shell {
                                     .flex()
                                     .flex_col()
                                     .gap(px(4.))
-                                    .child(ui::faint("直近 5 秒"))
+                                    .child(ui::faint("Last 5 s"))
                                     .child(spark)
-                                    .child(ui::faint("線: L=水色 R=橙 · 橙の横線=作動点")),
+                                    .child(ui::faint("Lines: L=cyan R=orange · orange horizontal line = actuation point")),
                             ),
                         ),
                 ),
@@ -1203,7 +1203,7 @@ impl Shell {
         let focused = self.focus.is_focused(window);
         let reset = ui::button(
             "test-reset-k",
-            "リセット",
+            "Reset",
             Some("rotate-ccw"),
             Btn::Ghost,
             cx,
@@ -1231,7 +1231,7 @@ impl Shell {
                 .child(ui::faint(label.to_string()))
                 .child(ui::big_number(v, 24.))
         };
-        ui::card_titled("キー入力テスト", "keyboard", Some(reset.into_any_element())).child(
+        ui::card_titled("Key Input Test", "keyboard", Some(reset.into_any_element())).child(
             ui::body()
                 .gap(px(12.))
                 .pt(px(8.))
@@ -1246,7 +1246,7 @@ impl Shell {
                             .bg(theme::alpha(p.warn, 0.12))
                             .border_1()
                             .border_color(theme::alpha(p.warn, 0.35))
-                            .child(ui::sub("ここをクリックしてからキーを押してください (入力欄にフォーカスがあると測れません)"))
+                            .child(ui::sub("Click here, then press keys (it can't measure while a text field has focus)"))
                             .on_click(cx.listener(|this, _, w, cx| {
                                 w.focus(&this.focus, cx);
                                 cx.notify();
@@ -1258,10 +1258,10 @@ impl Shell {
                     div()
                         .flex()
                         .gap(px(10.))
-                        .child(stat("総打鍵数", format!("{}", self.test.total)))
-                        .child(stat("同時押し (最大)", format!("{}", self.test.max_simul)))
-                        .child(stat("いま押しているキー", format!("{}", self.test.down.len())))
-                        .child(stat("チャタリング疑い", format!("{chatter}"))),
+                        .child(stat("Total keystrokes", format!("{}", self.test.total)))
+                        .child(stat("Simultaneous (max)", format!("{}", self.test.max_simul)))
+                        .child(stat("Keys held now", format!("{}", self.test.down.len())))
+                        .child(stat("Possible chatter", format!("{chatter}"))),
                 )
                 .child({
                     let (ev_s, _) = self.test.ev_rate();
@@ -1272,7 +1272,7 @@ impl Shell {
                         .flex()
                         .items_center()
                         .gap(px(10.))
-                        .child(ui::faint(format!("OS イベント {ev_s}/秒")))
+                        .child(ui::faint(format!("OS events {ev_s}/s")))
                 })
                 // 押下中キーの生データ (live_axis: 深さ mm / ADC / 状態)。
                 .when(!live.1.is_empty(), |d| {
@@ -1297,7 +1297,7 @@ impl Shell {
                         .and_then(|(_, i)| {
                             let a = live.1.get(i)?;
                             Some(format!(
-                                "最後: {} {:.2}mm · ADC {} · status {}",
+                                "Last: {} {:.2}mm · ADC {} · status {}",
                                 kc.layout.get(i)?.label, a.route, a.adc, a.status
                             ))
                         });
@@ -1312,8 +1312,8 @@ impl Shell {
                             .flex_col()
                             .gap(px(2.))
                             .child(ui::faint(format!(
-                                "生データ (押下中キー: {}) · 観測最大 {:.2}mm:",
-                                if rows.is_empty() { "なし" } else { "あり" },
+                                "Raw data (held key: {}) · max seen {:.2}mm:",
+                                if rows.is_empty() { "None" } else { "Yes" },
                                 live.2
                             )))
                             .children(rows.into_iter().map(ui::sub))
@@ -1321,9 +1321,9 @@ impl Shell {
                     )
                 })
                 .child(ui::faint(
-                    "押したキーは緑、押している間は青、25ms 未満の二重入力は赤で表示します。修飾キーは左右の区別が付きません (左側に記録)。Windows が横取りするキー (Win 単体・Alt+Tab 等) と Fn は OS に届かないため測れません。",
+                    "Pressed keys turn green, held keys blue, and double inputs under 25ms red. Left/right modifiers can't be told apart (recorded as left). Keys Windows intercepts (Win alone, Alt+Tab, etc.) and Fn never reach the OS, so they can't be measured.",
                 ))
-                .when(!unknown.is_empty(), |d| d.child(ui::faint(format!("図に無いキー: {}", unknown.join(" "))))),
+                .when(!unknown.is_empty(), |d| d.child(ui::faint(format!("Keys not in the diagram: {}", unknown.join(" "))))),
         )
         .into_any_element()
     }
@@ -1348,26 +1348,26 @@ fn usb_status_reason(st: devhub_polling::Status) -> (String, &'static str) {
     match st {
         DriverMissing { os: o } => (
             format!(
-                "USBPcap が見つかりません — ドライバ未導入かハブ番号が違います{}",
+                "USBPcap not found — driver not installed or wrong hub number{}",
                 os(o)
             ),
-            "USBPcap を導入して再起動するか、「OS 配信」方式で推定してください",
+            "Install USBPcap and reboot, or estimate with the \"OS delivery\" method",
         ),
         AccessDenied { os: o } => (
-            format!("権限不足でハブを開けません{}", os(o)),
-            "Device HUB を管理者として起動し直すか、「OS 配信」方式を使ってください",
+            format!("Cannot open the hub: insufficient permission{}", os(o)),
+            "Restart Device HUB as administrator, or use the \"OS delivery\" method",
         ),
         HubBusy { os: o } => (
-            format!("同じハブを別のプロセスが計測中です{}", os(o)),
-            "OBS の USB ソースや TShark/USBPcapCMD を止めてから開始してください",
+            format!("Another process is measuring the same hub{}", os(o)),
+            "Stop the OBS USB source or TShark/USBPcapCMD before starting",
         ),
         Disconnected { os: o } => (
-            format!("キャプチャが切断されました{}", os(o)),
-            "抜き差しで USB アドレスが変わることがあります — 対象を確認して開始し直してください",
+            format!("Capture disconnected{}", os(o)),
+            "Replugging can change the USB address — check the target and start again",
         ),
         Failed { os: o } => (
-            format!("USB キャプチャに失敗しました{}", os(o)),
-            "対象の値を確認して開始し直してください",
+            format!("USB capture failed{}", os(o)),
+            "Check the target values and start again",
         ),
         _ => (String::new(), ""),
     }

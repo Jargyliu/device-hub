@@ -38,11 +38,11 @@ pub fn kb_parts(this: &Shell) -> Option<(KeyboardCaps, KeyboardState)> {
 /// KeyAction の表示 (キーキャップ用の短い名前, 一覧用の名前)。
 pub fn action_label(kc: &KeyboardCaps, a: &KeyAction) -> (String, String) {
     match a {
-        KeyAction::None => ("—".into(), "無効".into()),
-        KeyAction::Transparent => ("▽".into(), "透過 (下のレイヤー)".into()),
+        KeyAction::None => ("—".into(), "Disabled".into()),
+        KeyAction::Transparent => ("▽".into(), "Transparent (layer below)".into()),
         KeyAction::Code(c) => match kc.code_label(*c) {
             Some((l, s)) => (s.unwrap_or(l).to_string(), l.to_string()),
-            None => (format!("{c:X}"), format!("コード 0x{c:X}")),
+            None => (format!("{c:X}"), format!("Code 0x{c:X}")),
         },
         KeyAction::Combo { mods, code } => {
             let k = kc
@@ -50,9 +50,9 @@ pub fn action_label(kc: &KeyboardCaps, a: &KeyAction) -> (String, String) {
                 .map(|(l, s)| s.unwrap_or(l).to_string())
                 .unwrap_or_default();
             let m = keys::mods_label(*mods);
-            (format!("{m}{k}"), format!("組み合わせ: {m}{k}"))
+            (format!("{m}{k}"), format!("Combo: {m}{k}"))
         }
-        KeyAction::Macro(i) => (format!("M{}", i + 1), format!("マクロ {}", i + 1)),
+        KeyAction::Macro(i) => (format!("M{}", i + 1), format!("Macro {}", i + 1)),
     }
 }
 
@@ -290,16 +290,16 @@ impl Shell {
             )
             .child(ui::button(
                 "layer-reset",
-                "このレイヤーを初期化",
+                "Reset this layer",
                 Some("rotate-ccw"),
                 Btn::Ghost,
                 cx,
                 move |this, _, cx| {
                     let l = layer as u8;
                     this.confirm(
-                        "レイヤーを初期化",
-                        "このレイヤーのキー割り当てを既定に戻します。",
-                        "初期化",
+                        "Reset layer",
+                        "Restores this layer's key assignments to defaults.",
+                        "Reset",
                         true,
                         Rc::new(move |this, _, cx| {
                             this.apply(Change::KeyMapReset { layer: l }, cx);
@@ -320,22 +320,22 @@ impl Shell {
                     .collect();
                 let items: Vec<crate::app::PopItem> = others
                     .iter()
-                    .map(|(_, n)| crate::app::PopItem::new(format!("{n} へコピー"), false))
+                    .map(|(_, n)| crate::app::PopItem::new(format!("Copy to {n}"), false))
                     .collect();
                 let src = map.clone();
                 d.child(ui::select(
                     "layer-copy",
                     items,
-                    "別レイヤーへコピー",
+                    "Copy to another layer",
                     170.,
                     cx,
                     move |this, i, _, cx| {
                         let (dst, name) = others[i].clone();
                         let src = src.clone();
                         this.confirm(
-                            "レイヤーをコピー",
-                            &format!("表示中のレイヤーの割り当てで「{name}」を上書きします。"),
-                            "コピー",
+                            "Copy layer",
+                            &format!("Overwrites \"{name}\" with the assignments of the displayed layer."),
+                            "Copy",
                             true,
                             Rc::new(move |this, _, cx| {
                                 let cur = crate::pages::keyboard::kb_parts(this)
@@ -361,7 +361,7 @@ impl Shell {
             });
 
         let board_card =
-            ui::card_titled("キーボード", "keyboard", Some(layer_ctl.into_any_element()))
+            ui::card_titled("Keyboard", "keyboard", Some(layer_ctl.into_any_element()))
                 .child(ui::body().pt(px(10.)).pb(px(18.)).child(view));
 
         let editor = match sel {
@@ -373,7 +373,7 @@ impl Shell {
                     .items_center()
                     .gap(px(12.))
                     .child(ui::icon("mouse-pointer-click", 18., p.sub))
-                    .child(ui::sub("割り当てを変えたいキーをクリックしてください")),
+                    .child(ui::sub("Click the key you want to reassign")),
             ),
             Some(i) => self.key_picker(&kc, &ks, layer as u8, i, window, cx),
         };
@@ -411,13 +411,13 @@ impl Shell {
 
         // グループ: catalog + 特殊 + マクロ + 組み合わせ。
         let mut groups: Vec<String> = kc.catalog.iter().map(|g| g.name.clone()).collect();
-        groups.push("特殊".into());
+        groups.push("Special".into());
         let macro_slots = kc.macros.as_ref().map(|m| m.slots).unwrap_or(0);
         if macro_slots > 0 {
-            groups.push("マクロ".into());
+            groups.push("Macros".into());
         }
         if kc.combos {
-            groups.push("組み合わせ".into());
+            groups.push("Combo".into());
         }
         self.key_group = self.key_group.min(groups.len() - 1);
         let g = self.key_group;
@@ -511,7 +511,7 @@ impl Shell {
         let search_in = self.input(
             "key_search",
             "",
-            "キーを検索 (例: F5, 音量, マウス)",
+            "Search keys (e.g. F5, volume, mouse)",
             window,
             cx,
         );
@@ -521,7 +521,7 @@ impl Shell {
             .trim()
             .to_lowercase();
         let mut grid = div().flex().flex_wrap().gap(px(6.));
-        let combo_mode = gname == "組み合わせ" && q.is_empty();
+        let combo_mode = gname == "Combo" && q.is_empty();
         if !q.is_empty() {
             let mut n = 0;
             for group in &kc.catalog {
@@ -550,15 +550,15 @@ impl Shell {
                 }
             }
             if n == 0 {
-                grid = grid.child(ui::faint("見つかりません"));
+                grid = grid.child(ui::faint("Nothing found"));
             }
-        } else if gname == "特殊" {
+        } else if gname == "Special" {
             grid = grid
                 .child(
                     choice(
                         "k-none".into(),
-                        "無効".into(),
-                        Some("何もしない".into()),
+                        "Disabled".into(),
+                        Some("Do nothing".into()),
                         cur == KeyAction::None,
                     )
                     .on_click(cx.listener(assign(KeyAction::None))),
@@ -566,13 +566,13 @@ impl Shell {
                 .child(
                     choice(
                         "k-trans".into(),
-                        "透過".into(),
-                        Some("下のレイヤー".into()),
+                        "Transparent".into(),
+                        Some("Layer below".into()),
                         cur == KeyAction::Transparent,
                     )
                     .on_click(cx.listener(assign(KeyAction::Transparent))),
                 );
-        } else if gname == "マクロ" {
+        } else if gname == "Macros" {
             for m in 0..macro_slots {
                 let a = KeyAction::Macro(m);
                 let defined = ks.macros.get(m as usize).is_some_and(|x| x.is_some());
@@ -581,9 +581,9 @@ impl Shell {
                         format!("k-m{m}"),
                         format!("M{}", m + 1),
                         Some(if defined {
-                            "定義済み".into()
+                            "Defined".into()
                         } else {
-                            "空".into()
+                            "Empty".into()
                         }),
                         cur == a,
                     )
@@ -610,7 +610,7 @@ impl Shell {
             grid = grid
                 .child(div().w_full().child(mods_row))
                 .child(div().w_full().child(ui::faint(
-                    "修飾を選んでから、組み合わせるキーを押してください",
+                    "Choose modifiers, then press the key to combine",
                 )));
             let mods = self.combo_mods;
             if let Some(basic) = kc.catalog.first() {
@@ -640,9 +640,9 @@ impl Shell {
         }
 
         ui::card_titled(
-            &format!("「{orig}」に割り当てる"),
+            &format!("Assign to \"{orig}\""),
             "replace",
-            Some(ui::chip(format!("現在: {cur_long}"), p.accent).into_any_element()),
+            Some(ui::chip(format!("Current: {cur_long}"), p.accent).into_any_element()),
         )
         .child(
             ui::body()
@@ -754,7 +754,7 @@ impl Shell {
             .gap(px(6.))
             .child(ui::button(
                 "sel-all",
-                "全選択",
+                "Select all",
                 Some("square-check"),
                 Btn::Ghost,
                 cx,
@@ -773,7 +773,7 @@ impl Shell {
             ))
             .child(ui::button(
                 "sel-inv",
-                "反転",
+                "Invert",
                 None,
                 Btn::Ghost,
                 cx,
@@ -784,7 +784,7 @@ impl Shell {
             ))
             .child(ui::button(
                 "sel-none",
-                "選択解除",
+                "Deselect",
                 None,
                 Btn::Ghost,
                 cx,
@@ -798,9 +798,9 @@ impl Shell {
                 d.child(ui::button(
                     "live",
                     if on {
-                        "テスト終了"
+                        "End test"
                     } else {
-                        "ストロークテスト"
+                        "Stroke Test"
                     },
                     Some("activity"),
                     if on { Btn::Primary } else { Btn::Glass },
@@ -814,7 +814,7 @@ impl Shell {
                 ))
             });
 
-        let board = ui::card_titled("トリガーマップ", "arrow-down-to-line", Some(tools.into_any_element())).child(
+        let board = ui::card_titled("Trigger Map", "arrow-down-to-line", Some(tools.into_any_element())).child(
             ui::body()
                 .pt(px(10.))
                 .pb(px(14.))
@@ -826,7 +826,7 @@ impl Shell {
                         .flex()
                         .items_center()
                         .gap(px(10.))
-                        .child(ui::faint(format!("浅い {:.1}mm", pc.min.max(0.1))))
+                        .child(ui::faint(format!("Shallow {:.1}mm", pc.min.max(0.1))))
                         .child(
                             div()
                                 .w(px(160.))
@@ -838,9 +838,9 @@ impl Shell {
                                     linear_color_stop(theme::hex(0xff7a3d, 0.9), 1.),
                                 )),
                         )
-                        .child(ui::faint(format!("深い {:.1}mm", pc.travel)))
+                        .child(ui::faint(format!("Deep {:.1}mm", pc.travel)))
                         .child(div().flex_1())
-                        .child(ui::faint("AP = アクチュエーションポイント / R = リセット · RT = ラピッドトリガー · クリックで複数選択")),
+                        .child(ui::faint("AP = actuation point / R = reset · RT = Rapid Trigger · click to multi-select")),
                 ),
         );
 
@@ -853,7 +853,7 @@ impl Shell {
                     .items_center()
                     .gap(px(12.))
                     .child(ui::icon("mouse-pointer-click", 18., p.sub))
-                    .child(ui::sub("設定するキーを選んでください (複数可)")),
+                    .child(ui::sub("Select the keys to configure (multiple allowed)")),
             )
         } else {
             self.perf_editor(&kc, &ks, &pc, &sel, live, window, cx)
@@ -887,7 +887,7 @@ impl Shell {
             .filter_map(|i| kc.layout.get(*i).map(|k| k.label.clone()))
             .collect();
         let title = if sel.len() > 6 {
-            format!("{} 他 {} キー", names.join(" "), sel.len() - 6)
+            format!("{} and {} more keys", names.join(" "), sel.len() - 6)
         } else {
             names.join(" ")
         };
@@ -914,15 +914,15 @@ impl Shell {
         let mut body = ui::body().pt(px(6.));
         if pc.rapid_trigger {
             body = body.child(ui::row_first(
-                "トリガー方式",
+                "Trigger mode",
                 Some(if rapid {
-                    "押し戻し量で ON/OFF を判定 (素早い切り返し)"
+                    "On/off decided by how far the key moves back (fast reversals)"
                 } else {
-                    "決まった深さで ON / OFF"
+                    "On / off at fixed depths"
                 }),
                 ui::segmented(
                     "perf-mode",
-                    &["通常".into(), "ラピッドトリガー".into()],
+                    &["Normal".into(), "Rapid Trigger".into()],
                     rapid as usize,
                     cx,
                     move |this, i, cx| {
@@ -948,8 +948,8 @@ impl Shell {
         if rapid && pc.continuous_rt {
             let keys_c = keys.clone();
             body = body.child(ui::row(
-                "連続高速トリガー",
-                Some("完全に戻るまでラピッドトリガーを続ける"),
+                "Continuous Rapid Trigger",
+                Some("Keeps Rapid Trigger active until the key fully returns"),
                 ui::toggle("perf-cont", cur.continuous, cx, move |this, on, cx| {
                     let mut np = cur;
                     np.continuous = on;
@@ -980,8 +980,8 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "ファーストトラベル",
-                    Some("最初に ON になる深さ"),
+                    "First travel",
+                    Some("Depth of the first activation"),
                     ui::slider_value_edit(
                         "perf-first",
                         cur.rt_first,
@@ -1009,8 +1009,8 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "押下 (トリガー)",
-                    Some("さらに押し込んで再 ON になる量"),
+                    "Press (trigger)",
+                    Some("Extra press needed to re-activate"),
                     ui::slider_value_edit(
                         "perf-rtp",
                         cur.rt_press,
@@ -1037,8 +1037,8 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "離す (リセット)",
-                    Some("戻して OFF になる量"),
+                    "Release (reset)",
+                    Some("Return distance to deactivate"),
                     ui::slider_value_edit(
                         "perf-rtr",
                         cur.rt_release,
@@ -1066,8 +1066,8 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "押下 (トリガー)",
-                    Some("この深さで押下と判定"),
+                    "Press (trigger)",
+                    Some("Pressed at this depth"),
                     ui::slider_value_edit(
                         "perf-act",
                         cur.actuation,
@@ -1088,11 +1088,11 @@ impl Shell {
                 let inp =
                     self.num_field("perf-rel", rel, min, max, step, "mm", window, cx, f.clone());
                 body = body.child(ui::row(
-                    "離す (リセット)",
+                    "Release (reset)",
                     Some(if cur.release.is_some() {
-                        "この深さまで戻ると離したと判定"
+                        "Released when it returns to this depth"
                     } else {
-                        "押下と連動中 — 動かすと独立設定になる"
+                        "Linked to press — move it to set independently"
                     }),
                     ui::slider_value_edit(
                         "perf-rel",
@@ -1121,8 +1121,8 @@ impl Shell {
                 f.clone(),
             );
             body = body.child(ui::row(
-                "上端デッドゾーン",
-                Some("触れただけの誤入力を防ぐ"),
+                "Top dead zone",
+                Some("Prevents accidental input from light touches"),
                 ui::slider_value_edit(
                     "perf-tdz",
                     cur.top_deadzone,
@@ -1147,8 +1147,8 @@ impl Shell {
                 f.clone(),
             );
             body = body.child(ui::row(
-                "下端デッドゾーン",
-                Some("底打ち付近の揺れを無視"),
+                "Bottom dead zone",
+                Some("Ignores wobble near bottom-out"),
                 ui::slider_value_edit(
                     "perf-bdz",
                     cur.bottom_deadzone,
@@ -1162,7 +1162,7 @@ impl Shell {
             ));
         }
         // ---- 詳細設定 (公式に無い追加項目) ----
-        body = body.child(ui::section_label("詳細設定"));
+        body = body.child(ui::section_label("Advanced"));
         // ワンクリックのプリセット (Web 版には無い)。
         {
             let presets: Vec<(&str, KeyPerf)> = {
@@ -1177,11 +1177,11 @@ impl Shell {
                 };
                 let mut v = vec![];
                 if pc.rapid_trigger {
-                    v.push(("最速 RT", rt(0.1, 0.03)));
-                    v.push(("競技 RT", rt(0.2, 0.1)));
+                    v.push(("Fastest RT", rt(0.1, 0.03)));
+                    v.push(("Competitive RT", rt(0.2, 0.1)));
                 }
                 v.push((
-                    "標準",
+                    "Standard",
                     KeyPerf {
                         mode: TriggerMode::Normal,
                         actuation: 1.2f32.min(max),
@@ -1190,7 +1190,7 @@ impl Shell {
                     },
                 ));
                 v.push((
-                    "タイピング",
+                    "Typing",
                     KeyPerf {
                         mode: TriggerMode::Normal,
                         actuation: 2.0f32.min(max),
@@ -1230,8 +1230,8 @@ impl Shell {
                 );
             }
             body = body.child(ui::row(
-                "プリセット",
-                Some("選択中のキーにまとめて適用"),
+                "Presets",
+                Some("Apply to selected keys"),
                 chips,
             ));
         }
@@ -1240,8 +1240,8 @@ impl Shell {
             let linked = cur.release.is_none();
             let keys_rel = keys.clone();
             body = body.child(ui::row(
-                "離す位置を押下に連動",
-                Some("ON ならリセット点は押下と同じ位置になる"),
+                "Link release to press",
+                Some("When on, the reset point is the same as the press point"),
                 ui::toggle("perf-rel-link", linked, cx, move |this, on, cx| {
                     let mut np = cur;
                     np.release = if on { None } else { Some(cur.actuation) };
@@ -1266,8 +1266,8 @@ impl Shell {
                 .collect();
             let keys_sw = keys.clone();
             body = body.child(ui::row(
-                "スイッチ種別",
-                Some("使っている磁気スイッチに合わせる"),
+                "Switch type",
+                Some("Match the magnetic switches you use"),
                 ui::select(
                     "perf-sw",
                     items,
@@ -1302,16 +1302,16 @@ impl Shell {
         let all = (0..kc.layout.len()).collect::<Vec<_>>();
         let apply_all = ui::button(
             "perf-all",
-            "全キーに適用",
+            "Apply to all keys",
             Some("copy"),
             Btn::Ghost,
             cx,
             move |this, _, cx| {
                 let a = all.clone();
                 this.confirm(
-                    "全キーに適用",
-                    "この設定をすべてのキーにコピーします。",
-                    "適用",
+                    "Apply to all keys",
+                    "Copies this setting to every key.",
+                    "Apply",
                     false,
                     Rc::new(move |this, _, cx| {
                         this.apply(
@@ -1461,20 +1461,20 @@ fn travel_figure(pf: &KeyPerf, pc: &PerfCaps, live: Option<f32>) -> Div {
             Some(yf),
             yf,
             p.warn,
-            format!("初回 {}", mm_fmt(pf.rt_first)),
+            format!("First {}", mm_fmt(pf.rt_first)),
         ));
         // 変化量は位置ではないので、初回ラインの上下に矢印注釈として置く
         marks.push((
             None,
             yf - 17.,
             p.ok,
-            format!("↑ -{} でOFF", mm_fmt(pf.rt_release)),
+            format!("↑ -{} off", mm_fmt(pf.rt_release)),
         ));
         marks.push((
             None,
             yf + 17.,
             p.accent,
-            format!("↓ +{} で再ON", mm_fmt(pf.rt_press)),
+            format!("↓ +{} re-on", mm_fmt(pf.rt_press)),
         ));
     } else {
         let ya = y(pf.actuation);
@@ -1482,11 +1482,11 @@ fn travel_figure(pf: &KeyPerf, pc: &PerfCaps, live: Option<f32>) -> Div {
             Some(ya),
             ya,
             p.accent,
-            format!("作動 {}", mm_fmt(pf.actuation)),
+            format!("Act {}", mm_fmt(pf.actuation)),
         ));
         if let Some(r) = pf.release {
             let yr = y(r);
-            marks.push((Some(yr), yr, p.ok, format!("解放 {}", mm_fmt(r))));
+            marks.push((Some(yr), yr, p.ok, format!("Rel {}", mm_fmt(r))));
         }
     }
     // デッドゾーン境界ラベル (帯の縁に合わせる)
@@ -1496,13 +1496,13 @@ fn travel_figure(pf: &KeyPerf, pc: &PerfCaps, live: Option<f32>) -> Div {
         None,
         dzt,
         p.sub,
-        format!("上端 {}", mm_fmt(pf.top_deadzone)),
+        format!("Top {}", mm_fmt(pf.top_deadzone)),
     ));
     marks.push((
         None,
         dzb,
         p.sub,
-        format!("下端 {}", mm_fmt(pf.bottom_deadzone)),
+        format!("Bottom {}", mm_fmt(pf.bottom_deadzone)),
     ));
 
     // ラベルの重なり解消: 希望 y でソート → 最小 14px 間隔に広げ → 図内に収める
@@ -1598,15 +1598,15 @@ fn travel_figure(pf: &KeyPerf, pc: &PerfCaps, live: Option<f32>) -> Div {
     };
     if rapid {
         legend = legend
-            .child(swatch(p.warn, "初回のON位置"))
-            .child(swatch(p.ok, "↑戻し量でOFF"))
-            .child(swatch(p.accent, "↓押込量で再ON"));
+            .child(swatch(p.warn, "First on point"))
+            .child(swatch(p.ok, "↑ Return to off"))
+            .child(swatch(p.accent, "↓ Press to re-on"));
     } else {
         legend = legend
-            .child(swatch(p.accent, "作動 (ON)"))
-            .child(swatch(p.ok, "解放 (OFF)"));
+            .child(swatch(p.accent, "Actuation (on)"))
+            .child(swatch(p.ok, "Release (off)"));
     }
-    legend = legend.child(swatch(theme::alpha(p.fg, 0.35), "デッドゾーン"));
+    legend = legend.child(swatch(theme::alpha(p.fg, 0.35), "Dead zones"));
 
     div()
         .flex()
@@ -1615,7 +1615,7 @@ fn travel_figure(pf: &KeyPerf, pc: &PerfCaps, live: Option<f32>) -> Div {
         .child(fig)
         .child(legend)
         .when_some(live, |d, v| {
-            d.child(ui::chip(format!("現在 {}mm", mm_fmt(v)), p.accent))
+            d.child(ui::chip(format!("Now {}mm", mm_fmt(v)), p.accent))
         })
 }
 

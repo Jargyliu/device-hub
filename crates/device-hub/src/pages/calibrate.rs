@@ -81,7 +81,7 @@ impl Shell {
                 .gap(px(8.))
                 .child(ui::button(
                     "cal-cancel",
-                    "閉じる",
+                    "Close",
                     None,
                     Btn::Ghost,
                     cx,
@@ -92,14 +92,14 @@ impl Shell {
                 ))
                 .child(ui::button(
                     "cal-start",
-                    "開始",
+                    "Start",
                     Some("play"),
                     Btn::Primary,
                     cx,
                     |this, _, cx| {
                         if let Some(id) = this.device_id() {
                             this.hub
-                                .run_action(&id, "calibrate", "キャリブレーション開始", None);
+                                .run_action(&id, "calibrate", "Start calibration", None);
                             this.hub.set_travel(&id, true);
                         }
                         this.modal = Some(Modal::Calibrate {
@@ -115,11 +115,11 @@ impl Shell {
                 .flex()
                 .items_center()
                 .gap(px(8.))
-                .child(ui::faint(format!("{done} / {n} キー完了")))
+                .child(ui::faint(format!("{done} / {n} keys done")))
                 .child(div().flex_1())
                 .child(ui::button(
                     "cal-abort",
-                    "中止",
+                    "Abort",
                     None,
                     Btn::Ghost,
                     cx,
@@ -134,9 +134,9 @@ impl Shell {
                 .child(ui::button(
                     "cal-finish",
                     if all {
-                        "完了して保存"
+                        "Finish and save"
                     } else {
-                        "このまま保存"
+                        "Save as is"
                     },
                     Some("check"),
                     if all { Btn::Primary } else { Btn::Glass },
@@ -148,13 +148,13 @@ impl Shell {
                                 this.hub.run_action(
                                     &id,
                                     "calibrate_finish",
-                                    "キャリブレーション保存",
+                                    "Save calibration",
                                     None,
                                 );
                             }
                         }
                         this.modal = None;
-                        this.toast(format!("キャリブレーション: {done}/{n} キー"), done < n, cx);
+                        this.toast(format!("Calibration: {done}/{n} keys"), done < n, cx);
                     },
                 ))
         };
@@ -164,9 +164,9 @@ impl Shell {
             .flex_col()
             .gap(px(14.))
             .child(ui::sub(if started {
-                "すべてのキーを 1 回ずつ、ゆっくり底まで押して離してください。底まで届いたキーは緑になります。"
+                "Press each key slowly all the way down once, then release. Keys that reach the bottom turn green."
             } else {
-                "キーの押下量の基準を測り直します。開始したら、すべてのキーを 1 回ずつ底まで押してください。途中でキーボードを抜かないでください。"
+                "Re-measures the key travel reference. After starting, press every key to the bottom once. Don't unplug the keyboard during calibration."
             }))
             .when(started, |d| {
                 d.child(

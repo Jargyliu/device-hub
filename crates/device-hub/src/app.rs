@@ -59,17 +59,17 @@ impl Tab {
     pub fn label(self) -> &'static str {
         match self {
             Tab::Dpi => "DPI",
-            Tab::Buttons => "ボタン",
-            Tab::Performance => "性能",
-            Tab::Keymap => "キー割り当て",
-            Tab::Trigger => "トリガー",
-            Tab::Advanced => "高度キー",
-            Tab::Lighting => "ライティング",
-            Tab::Live => "ライブ",
-            Tab::Macros => "マクロ",
-            Tab::Audio => "オーディオ",
-            Tab::Test => "テスト",
-            Tab::System => "一般",
+            Tab::Buttons => "Buttons",
+            Tab::Performance => "Performance",
+            Tab::Keymap => "Keymap",
+            Tab::Trigger => "Triggers",
+            Tab::Advanced => "Advanced Keys",
+            Tab::Lighting => "Lighting",
+            Tab::Live => "Live",
+            Tab::Macros => "Macros",
+            Tab::Audio => "Audio",
+            Tab::Test => "Test",
+            Tab::System => "General",
         }
     }
     pub fn icon(self) -> &'static str {
@@ -837,7 +837,7 @@ impl Shell {
             // 構成切替+全読み直しの最中は構成内の編集を止める
             // (切替前の構成の値を切替後の構成へ書かないため)。
             if self.hub.session(&id).is_some_and(|s| s.switching_profile) {
-                self.toast("構成を切り替えています…", false, cx);
+                self.toast("Switching configuration…", false, cx);
                 return;
             }
             if !self.restoring {
@@ -958,12 +958,12 @@ impl Shell {
             .and_then(|id| self.hub.session(&id))
             .and_then(|s| s.caps.clone().zip(s.state.clone()))
         else {
-            self.toast("デバイスの設定を読み込めていません", true, cx);
+            self.toast("Device settings have not been loaded", true, cx);
             return;
         };
         match crate::store::state_compatible(&caps, &st) {
             Err(e) => {
-                self.toast(format!("「{name}」は適用できません: {e}"), true, cx);
+                self.toast(format!("Cannot apply \"{name}\": {e}"), true, cx);
                 return;
             }
             Ok(Some(w)) => self.toast(w, false, cx),
@@ -973,19 +973,19 @@ impl Shell {
         st.profile.active = cur.profile.active;
         match self.apply_state(&st, true, cx) {
             RestoreOutcome::Applied(n) => self.toast(
-                format!("「{name}」を適用しました ({n} 項目) — Ctrl+Z で戻せます"),
+                format!("Applied \"{name}\" ({n} items) — Ctrl+Z to undo"),
                 false,
                 cx,
             ),
-            RestoreOutcome::Switching => self.toast("構成を切り替えて適用します…", false, cx),
-            RestoreOutcome::Nothing => self.toast("適用できませんでした", true, cx),
+            RestoreOutcome::Switching => self.toast("Switching configuration to apply…", false, cx),
+            RestoreOutcome::Nothing => self.toast("Could not apply", true, cx),
         }
     }
 
     pub fn undo(&mut self, cx: &mut Context<Self>) {
         let Some(id) = self.device_id() else { return };
         let Some(pos) = self.undo.iter().rposition(|(d, _)| *d == id) else {
-            self.toast("元に戻せる変更はありません", false, cx);
+            self.toast("Nothing to undo", false, cx);
             return;
         };
         let (_, st) = self.undo.remove(pos);
@@ -994,9 +994,9 @@ impl Shell {
         }
         match self.apply_state_to(&id, &st, false, HistSrc::Undo, cx) {
             RestoreOutcome::Applied(n) => {
-                self.toast(format!("元に戻しました ({n} 項目)"), false, cx)
+                self.toast(format!("Undone ({n} items)"), false, cx)
             }
-            RestoreOutcome::Switching => self.toast("構成を切り替えて元に戻します…", false, cx),
+            RestoreOutcome::Switching => self.toast("Switching configuration to undo…", false, cx),
             RestoreOutcome::Nothing => {
                 self.undo.push((id, st));
                 self.redo.pop();
@@ -1015,9 +1015,9 @@ impl Shell {
         }
         match self.apply_state_to(&id, &st, false, HistSrc::Redo, cx) {
             RestoreOutcome::Applied(n) => {
-                self.toast(format!("やり直しました ({n} 項目)"), false, cx)
+                self.toast(format!("Redone ({n} items)"), false, cx)
             }
-            RestoreOutcome::Switching => self.toast("構成を切り替えてやり直します…", false, cx),
+            RestoreOutcome::Switching => self.toast("Switching configuration to redo…", false, cx),
             RestoreOutcome::Nothing => {
                 self.redo.push((id, st));
                 self.undo.pop();
@@ -1481,9 +1481,9 @@ impl Shell {
                     .text_size(px(12.))
                     .text_color(p.faint)
                     .child(if self.hub.scanned {
-                        "デバイスが見つかりません"
+                        "No devices found"
                     } else {
-                        "検索中…"
+                        "Searching…"
                     }),
             );
         }
@@ -1554,9 +1554,9 @@ impl Shell {
                                     )
                                     .child(div().text_size(px(10.5)).text_color(p.faint).child(
                                         if self.hub.demo {
-                                            "デモモード"
+                                            "Demo mode"
                                         } else {
-                                            "ブラウザ不要の設定ツール"
+                                            "Configure without a browser"
                                         },
                                     )),
                             ),
@@ -1582,7 +1582,7 @@ impl Shell {
                                     .flex_1()
                                     .text_size(px(12.5))
                                     .text_color(p.faint)
-                                    .child("検索"),
+                                    .child("Search"),
                             )
                             .child(
                                 div()
@@ -1595,13 +1595,13 @@ impl Shell {
                     .child(self.side_nav(
                         "home",
                         "layout-grid",
-                        "ホーム",
+                        "Home",
                         home_sel,
                         Route::Home,
                         cx,
                     ))
                     .child(
-                        ui::section_label("デバイス")
+                        ui::section_label("Devices")
                             .px(px(10.))
                             .pt(px(14.))
                             .pb(px(6.)),
@@ -1618,7 +1618,7 @@ impl Shell {
                     .child(self.side_nav(
                         "obs",
                         "cast",
-                        "OBS オーバーレイ",
+                        "OBS Overlay",
                         obs_sel,
                         Route::Obs,
                         cx,
@@ -1626,7 +1626,7 @@ impl Shell {
                     .child(self.side_nav(
                         "auto",
                         "zap",
-                        "自動化",
+                        "Automation",
                         self.route == Route::Auto,
                         Route::Auto,
                         cx,
@@ -1634,7 +1634,7 @@ impl Shell {
                     .child(self.side_nav(
                         "settings",
                         "settings",
-                        "アプリ設定",
+                        "App Settings",
                         settings_sel,
                         Route::Settings,
                         cx,
@@ -1713,15 +1713,15 @@ impl Shell {
             DeviceKind::Other => "usb",
         };
         let sub = if !d.supported {
-            "未対応".to_string()
+            "Unsupported".to_string()
         } else if d.asleep {
-            "スリープ中".to_string()
+            "Asleep".to_string()
         } else {
             match d.transport {
-                Transport::Wired => "有線".to_string(),
+                Transport::Wired => "Wired".to_string(),
                 Transport::Wireless24G => "2.4GHz".to_string(),
                 Transport::Bluetooth => "Bluetooth".to_string(),
-                Transport::Unknown => "接続中".to_string(),
+                Transport::Unknown => "Connected".to_string(),
             }
         };
         let pending = self
@@ -1805,7 +1805,7 @@ impl Shell {
                             .text_size(px(11.))
                             .text_color(p.faint)
                             .child(ui::icon("battery", 14., p.faint))
-                            .child(format!("{pc}% · スリープ中"))
+                            .child(format!("{pc}% · Asleep"))
                     } else {
                         ui::battery_pill(pc, ch)
                     })
@@ -2068,7 +2068,7 @@ impl Shell {
     fn usb_resolve_target(&mut self) -> bool {
         if self.prefs.usb_pick.is_empty() { return true; }
         let Some(d) = devhub_polling::discover::resolve(&self.prefs.usb_pick, 0, 0) else {
-            self.usb_scan_msg = Some("対象が見つかりません。接続を確認して更新し、製品を選び直してください。".into());
+            self.usb_scan_msg = Some("Target not found. Check the connection, refresh, and select the product again.".into());
             return false;
         };
         self.usb_target.hub = d.hub;
@@ -2126,19 +2126,19 @@ impl Shell {
                                     self.usb_target.endpoint = *ep;
                                     self.prefs.usb_ep = ep & 0x7f;
                                     self.prefs.save();
-                                    format!("EP 0x{ep:02X} を検出 ({n} 転送) — 計測を開始できます")
+                                    format!("Detected EP 0x{ep:02X} ({n} transfers) — ready to measure")
                                 }
                                 None => {
-                                    "転送なし — 対象デバイスを操作しながら再試行".to_string()
+                                    "No transfers — retry while using the target device".to_string()
                                 }
                             }
                         }
-                        Ok(_) => "対象が変わったため検出結果を破棄しました".to_string(),
+                        Ok(_) => "Detection result discarded because the target changed".to_string(),
                         Err(e) => match e.raw_os_error() {
-                            Some(5) => "EP 検出失敗 — 権限不足 (管理者として実行)".into(),
-                            Some(32) => "EP 検出失敗 — ハブが使用中".into(),
-                            Some(2 | 3) => "EP 検出失敗 — USBPcap ハブなし".into(),
-                            _ => format!("EP 検出失敗: {e}"),
+                            Some(5) => "EP detection failed — insufficient permission (run as administrator)".into(),
+                            Some(32) => "EP detection failed — hub is in use".into(),
+                            Some(2 | 3) => "EP detection failed — no USBPcap hub".into(),
+                            _ => format!("EP detection failed: {e}"),
                         },
                     });
                 }

@@ -924,7 +924,7 @@ impl MfDongleDriver {
                 .unwrap_or_default();
             String::from_utf8_lossy(&nb).into_owned()
         } else {
-            format!("マクロ {}", slot + 1)
+            format!("Macro {}", slot + 1)
         };
         Ok(Some(MacroDef {
             name,
@@ -1215,9 +1215,9 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
             "polling_wireless",
             PERFORMANCE,
             if wired {
-                "ポーリングレート"
+                "Polling rate"
             } else {
-                "ポーリングレート (無線)"
+                "Polling rate (wireless)"
             },
             opts(&[
                 (125, "125"),
@@ -1229,38 +1229,38 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
                 (8000, "8K"),
             ]),
         )
-        .help("マウス→レシーバー間の報告頻度 (Hz)"),
-        SettingSpec::toggle("competitive", PERFORMANCE, "競技モード")
-            .help("センサーを常時最高性能で動かします (Sensor FPS 20K)"),
-        SettingSpec::choice("lod", SENSOR, "リフトオフ距離", opts(m.lod_choices))
-            .help("マウスを持ち上げたとき反応しなくなる高さ"),
-        SettingSpec::toggle("motion_sync", SENSOR, "モーション同期")
-            .help("ポインタとマウスの動きを同期させ、軌跡を滑らかにします"),
-        SettingSpec::toggle("angle_snap", SENSOR, "直線補正").help("移動のブレを直線に補正します"),
-        SettingSpec::toggle("ripple", SENSOR, "リップル制御").help("高DPI時の細かい揺れを抑えます"),
+        .help("Mouse → receiver report rate (Hz)"),
+        SettingSpec::toggle("competitive", PERFORMANCE, "Competitive mode")
+            .help("Keeps the sensor at maximum performance at all times (Sensor FPS 20K)"),
+        SettingSpec::choice("lod", SENSOR, "Lift-off distance", opts(m.lod_choices))
+            .help("Height at which the mouse stops tracking when lifted"),
+        SettingSpec::toggle("motion_sync", SENSOR, "Motion sync")
+            .help("Syncs pointer and mouse movement for smoother tracking"),
+        SettingSpec::toggle("angle_snap", SENSOR, "Angle snapping").help("Straightens shaky movement into lines"),
+        SettingSpec::toggle("ripple", SENSOR, "Ripple control").help("Suppresses fine jitter at high DPI"),
     ];
     if m.sensor_angle {
         settings.push(
-            SettingSpec::slider("sensor_angle", SENSOR, "センサー角度", -30., 30., 1., "°")
-                .help("持ち方に合わせて座標軸を回転させます"),
+            SettingSpec::slider("sensor_angle", SENSOR, "Sensor angle", -30., 30., 1., "°")
+                .help("Rotates the axes to match your grip"),
         );
     }
     settings.extend([
         SettingSpec::slider(
             "debounce_press",
             CLICK,
-            "クリックデバウンス (押下)",
+            "Click debounce (press)",
             0.,
             m.debounce_max as f32,
             1.,
             "ms",
         )
-        .help("短くすると反応が速く、長くすると誤クリックを防ぎます")
-        .confirm("0ms にするとダブルクリックが発生する場合があります。続けますか?"),
+        .help("Shorter is more responsive; longer prevents accidental clicks")
+        .confirm("0ms may cause double clicks. Continue?"),
         SettingSpec::slider(
             "debounce_release",
             CLICK,
-            "クリックデバウンス (解放)",
+            "Click debounce (release)",
             0.,
             m.debounce_max as f32,
             1.,
@@ -1269,7 +1269,7 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
         SettingSpec::slider(
             "wheel_debounce",
             CLICK,
-            "ホイールデバウンス",
+            "Wheel debounce",
             0.,
             245.,
             5.,
@@ -1282,66 +1282,66 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
             SettingSpec::slider(
                 "ms_trigger_left",
                 MAGNETIC,
-                "L トリガー位置",
+                "L trigger position",
                 1.,
                 20.,
                 1.,
                 "",
             )
-            .help("作動する深さ (1 刻み = 深さ 5%)"),
+            .help("Actuation depth (each step = 5% depth)"),
             SettingSpec::slider(
                 "ms_trigger_right",
                 MAGNETIC,
-                "R トリガー位置",
+                "R trigger position",
                 1.,
                 20.,
                 1.,
                 "",
             ),
             // 公式は「有効トグル + 感度 1-10」。EEPROM byte = enable<<7 | value。
-            SettingSpec::toggle("ms_fast_left_en", MAGNETIC, "L ラピッドトリガー"),
-            SettingSpec::slider("ms_fast_left", MAGNETIC, "L RT 感度", 1., 10., 1., ""),
-            SettingSpec::toggle("ms_fast_right_en", MAGNETIC, "R ラピッドトリガー"),
-            SettingSpec::slider("ms_fast_right", MAGNETIC, "R RT 感度", 1., 10., 1., ""),
+            SettingSpec::toggle("ms_fast_left_en", MAGNETIC, "L Rapid Trigger"),
+            SettingSpec::slider("ms_fast_left", MAGNETIC, "L RT sensitivity", 1., 10., 1., ""),
+            SettingSpec::toggle("ms_fast_right_en", MAGNETIC, "R Rapid Trigger"),
+            SettingSpec::slider("ms_fast_right", MAGNETIC, "R RT sensitivity", 1., 10., 1., ""),
         ]);
     }
     if m.spdt {
         settings.extend([
             SettingSpec::toggle("spdt_left", CLICK, "Left SPDT")
-                .help("スイッチの両接点でクリックを判定し、遅延を減らします"),
+                .help("Detects clicks on both switch contacts to reduce latency"),
             SettingSpec::toggle("spdt_right", CLICK, "Right SPDT")
-                .help("スイッチの両接点でクリックを判定し、遅延を減らします"),
+                .help("Detects clicks on both switch contacts to reduce latency"),
         ]);
     }
     settings.push(
         SettingSpec::choice(
             "sleep_min",
             POWER,
-            "スリープまでの時間",
+            "Sleep timeout",
             opts(&[
-                (1, "1分"),
-                (2, "2分"),
-                (3, "3分"),
-                (5, "5分"),
-                (10, "10分"),
-                (15, "15分"),
-                (30, "30分"),
+                (1, "1 min"),
+                (2, "2 min"),
+                (3, "3 min"),
+                (5, "5 min"),
+                (10, "10 min"),
+                (15, "15 min"),
+                (30, "30 min"),
             ]),
         )
-        .help("この時間動かさないとスリープします"),
+        .help("Sleeps after this long without movement"),
     );
     if m.long_range {
         settings.push(
-            SettingSpec::toggle("long_range", CONNECTION, "長距離モード")
-                .help("レシーバーと遠くても通信を維持します (消費電力増)"),
+            SettingSpec::toggle("long_range", CONNECTION, "Long-range mode")
+                .help("Keeps the link even far from the receiver (uses more power)"),
         );
     }
 
     Capabilities {
         settings,
-        actions: vec![ActionSpec::new("pair", CONNECTION, "ペアリングモード")
-            .help("レシーバーをペアリング待受状態にします。マウス側もペアリング操作が必要です")
-            .confirm("ペアリングモードを開始しますか?")],
+        actions: vec![ActionSpec::new("pair", CONNECTION, "Pairing mode")
+            .help("Puts the receiver in pairing mode. The mouse also needs its pairing operation")
+            .confirm("Start pairing mode?")],
         profiles: (m.profiles > 1).then_some(ProfileCaps {
             count: m.profiles,
             renamable: false,
@@ -1358,9 +1358,9 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
             buttons: [
                 "Left",
                 "Right",
-                "ホイールクリック",
-                "サイド (戻る)",
-                "サイド (進む)",
+                "Wheel Click",
+                "Side (Back)",
+                "Side (Forward)",
             ][..m.btn_num.min(5)]
                 .iter()
                 .map(|n| ButtonSlot { name: (*n).into() })
@@ -1383,9 +1383,9 @@ fn build_caps(info: &DeviceInfo, m: &R8Model) -> Capabilities {
                 max_events: 70,
                 max_delay_ms: 0xFFFF,
                 modes: opts(&[
-                    (0, "指定回数実行"),
-                    (1, "離すまで繰り返す"),
-                    (2, "もう一度押すまで繰り返す"),
+                    (0, "Run a set number of times"),
+                    (1, "Repeat until released"),
+                    (2, "Repeat until pressed again"),
                 ]),
                 repeat_modes: vec![0],
                 names: false,
@@ -1832,7 +1832,7 @@ impl DeviceDriver for MfDongleDriver {
                 f[0] = 6;
                 let r = self.cmd(&f)?;
                 Ok(ActionOutcome {
-                    message: Some(format!("ペアリング結果: {}", r[6])),
+                    message: Some(format!("Pairing result: {}", r[6])),
                     reload: false,
                 })
             }

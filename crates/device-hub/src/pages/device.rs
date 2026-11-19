@@ -122,10 +122,10 @@ impl Shell {
         let mut meta = vec![info.vendor.clone()];
         meta.push(
             match info.transport {
-                Transport::Wired => "有線",
+                Transport::Wired => "Wired",
                 Transport::Wireless24G => "2.4GHz",
                 Transport::Bluetooth => "Bluetooth",
-                Transport::Unknown => "接続方式不明",
+                Transport::Unknown => "Unknown connection",
             }
             .to_string(),
         );
@@ -133,7 +133,7 @@ impl Shell {
             meta.push(format!("FW {fw}"));
         }
         if let Some(fw) = &info.dongle_firmware {
-            meta.push(format!("レシーバー {fw}"));
+            meta.push(format!("Receiver {fw}"));
         }
 
         // プロファイル切替。
@@ -143,7 +143,7 @@ impl Shell {
                     .map(|i| {
                         let n = ps.names.get(i as usize).filter(|n| !n.is_empty()).cloned();
                         let mut it = PopItem::new(
-                            n.unwrap_or_else(|| format!("プロファイル {}", i + 1)),
+                            n.unwrap_or_else(|| format!("Profile {}", i + 1)),
                             i == ps.active,
                         );
                         it.sub = Some(format!("P{}", i + 1));
@@ -155,14 +155,14 @@ impl Shell {
                     .get(ps.active as usize)
                     .filter(|n| !n.is_empty())
                     .cloned()
-                    .unwrap_or_else(|| format!("プロファイル {}", ps.active + 1));
+                    .unwrap_or_else(|| format!("Profile {}", ps.active + 1));
                 let id2 = id.clone();
                 Some(
                     div()
                         .flex()
                         .items_center()
                         .gap(px(8.))
-                        .child(ui::faint("プロファイル"))
+                        .child(ui::faint("Profile"))
                         .child(ui::select(
                             "profile",
                             items,
@@ -218,9 +218,9 @@ impl Shell {
                 .gap(px(6.))
                 .child(ui::sync_dot(pending > 0))
                 .child(ui::faint(if pending > 0 {
-                    "書き込み中"
+                    "Writing"
                 } else {
-                    "同期済み"
+                    "Synced"
                 }))
                 .into_any_element()
         };
@@ -269,7 +269,7 @@ impl Shell {
                                     let idr = id_rename.clone();
                                     let orig = orig_name.clone();
                                     this.modal = Some(Modal::Text {
-                                        title: "表示名を変更".into(),
+                                        title: "Rename".into(),
                                         on_ok: Rc::new(move |this, v, _, cx| {
                                             let v = v.trim().to_string();
                                             if v.is_empty() || v == orig {
@@ -316,7 +316,7 @@ impl Shell {
                 cx,
                 move |this, _, cx| {
                     this.hub.reload(&id_reload);
-                    this.toast("デバイスから読み直しています", false, cx);
+                    this.toast("Reloading from device", false, cx);
                 },
             ))
     }
@@ -348,7 +348,7 @@ impl Shell {
                 .justify_center()
                 .gap(px(14.))
                 .child(dots)
-                .child(ui::sub("デバイスから設定を読み込んでいます…")),
+                .child(ui::sub("Loading settings from the device…")),
         )
     }
 
@@ -367,18 +367,18 @@ impl Shell {
             let i = info.expect("info");
             c = c.child(ui::empty_state(
                 "puzzle",
-                "このデバイスはまだ設定できません",
+                "This device can't be configured yet",
                 &format!(
-                    "{} ({:04X}:{:04X}) は検出できていますが、プロトコルドライバが未実装です。docs/ADD_DEVICE.md の手順で追加できます。",
+                    "{} ({:04X}:{:04X}) is detected, but its protocol driver isn't implemented. You can add one by following docs/ADD_DEVICE.md.",
                     i.name, i.vid, i.pid
                 ),
             ));
         } else {
             c = c
-                .child(ui::empty_state("plug-zap", "デバイスと通信できません", err))
+                .child(ui::empty_state("plug-zap", "Cannot communicate with the device", err))
                 .child(ui::button(
                     "retry",
-                    "再試行",
+                    "Retry",
                     Some("refresh-cw"),
                     Btn::Primary,
                     cx,
@@ -405,7 +405,7 @@ impl Shell {
             let p = theme::pal();
             let big = st.peak_hz.or(st.seg_hz).unwrap_or(st.hz);
             cards.push(
-                ui::card_titled("ポーリング実測", "gauge", None)
+                ui::card_titled("Measured Polling", "gauge", None)
                     .child(
                         ui::body()
                             .pt(px(8.))
@@ -418,13 +418,13 @@ impl Shell {
                                     .when(bg, |d| d.text_color(p.faint)),
                             )
                             .child(ui::faint(if bg {
-                                format!("背面の受信 {:.0} 件/秒 (参考値)", st.hz)
+                                format!("Background receive {:.0}/s (approx.)", st.hz)
                             } else if big < 1. {
-                                "— デバイスを操作すると計測されます".into()
+                                "— measured while you use the device".into()
                             } else {
-                                let mut s = format!("ピーク · 平均 {:.0}", st.hz);
+                                let mut s = format!("Peak · avg {:.0}", st.hz);
                                 if let Some((med, _)) = st.gap_stats {
-                                    s = format!("{s} · 推定周期 {med:.3}ms",);
+                                    s = format!("{s} · est. interval {med:.3}ms",);
                                 }
                                 s
                             })),
@@ -486,14 +486,14 @@ impl Shell {
             ui::select(
                 "preset-quick",
                 items,
-                "プリセット",
+                "Presets",
                 150.,
                 cx,
                 move |this, i, _, cx| {
                     if let Some(pr) = list.get(i) {
                         match crate::presets::load(pr) {
                             Ok(st) => this.apply_preset(&pr.name, st, cx),
-                            Err(e) => this.toast(format!("読み込めません: {e}"), true, cx),
+                            Err(e) => this.toast(format!("Cannot load: {e}"), true, cx),
                         }
                     }
                 },

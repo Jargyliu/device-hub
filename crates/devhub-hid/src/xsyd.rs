@@ -634,7 +634,7 @@ impl XsydDriver {
     fn reset_scope(&self, scope: u8, label: &str) -> HubResult<ActionOutcome> {
         self.cmd(grp::GLOBAL, gfs::RESET_FACTORY, &[scope])?;
         Ok(ActionOutcome {
-            message: Some(format!("{label}を初期値に戻しました")),
+            message: Some(format!("Restored {label} to defaults")),
             reload: true,
         })
     }
@@ -1267,9 +1267,9 @@ impl XsydDriver {
         };
         let raw = base64::engine::general_purpose::STANDARD
             .decode(b64.trim())
-            .map_err(|e| HubError::Invalid(format!("暗号化データ: {e}")))?;
+            .map_err(|e| HubError::Invalid(format!("Encrypted data: {e}")))?;
         if raw.len() < 48 || &raw[..8] != b"Salted__" {
-            return Err(HubError::Invalid("暗号化データの形式が違います".into()));
+            return Err(HubError::Invalid("Encrypted data has the wrong format".into()));
         }
         // EVP_BytesToKey: D_i = MD5(D_{i-1} | pass | salt) 連結 → key 32B + iv 16B
         use md5::{Digest, Md5};
@@ -1287,8 +1287,8 @@ impl XsydDriver {
         let pt = cbc::Decryptor::<aes::Aes256>::new_from_slices(&keyiv[..32], &keyiv[32..48])
             .map_err(|e| HubError::Invalid(format!("AES: {e}")))?
             .decrypt_padded_mut::<Pkcs7>(&mut ct)
-            .map_err(|_| HubError::Invalid("復号に失敗しました".into()))?;
-        serde_json::from_slice(pt).map_err(|e| HubError::Invalid(format!("復号 JSON: {e}")))
+            .map_err(|_| HubError::Invalid("Decryption failed".into()))?;
+        serde_json::from_slice(pt).map_err(|e| HubError::Invalid(format!("Decrypted JSON: {e}")))
     }
 
     /// 公式エクスポート → DeviceState (書き込みは `import_state` に任せる)。
@@ -1307,7 +1307,7 @@ impl XsydDriver {
             let (vid, pid) = (num("vid"), num("pid"));
             if (vid, pid) != (self.info.vid as u32, self.info.pid as u32) {
                 return Err(HubError::Invalid(format!(
-                    "このファイルは別モデルのキーボード用です ({vid:04x}:{pid:04x})"
+                    "This file is for a different keyboard model ({vid:04x}:{pid:04x})"
                 )));
             }
         }
@@ -1324,7 +1324,7 @@ impl XsydDriver {
             }
         }
         if grid.is_empty() {
-            return Err(HubError::Invalid("キーボードデータがありません".into()));
+            return Err(HubError::Invalid("No keyboard data".into()));
         }
         // ---- キーマップ (win.fn0-3 → レイヤー 0-3) ----
         let nlayers = (self.xs.layers as usize).min(4);
@@ -2036,7 +2036,7 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
         SettingSpec {
             id: "polling".into(),
             section: PERFORMANCE.into(),
-            label: "ポーリングレート".into(),
+            label: "Polling rate".into(),
             help: None,
             kind: SettingKind::Choice {
                 options: xs
@@ -2052,8 +2052,8 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
         SettingSpec {
             id: "system_type".into(),
             section: KEYBOARD.into(),
-            label: "OS 種別".into(),
-            help: Some("Win / Mac のキー配列モードを切り替えます".into()),
+            label: "OS type".into(),
+            help: Some("Switches between Win / Mac key layout modes".into()),
             kind: SettingKind::Choice {
                 options: vec![ChoiceOpt::new(0, "Windows"), ChoiceOpt::new(1, "Mac")],
             },
@@ -2061,72 +2061,72 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
             confirm: None,
             enabled_when: None,
         },
-        SettingSpec::toggle("shake_opt", KEYBOARD, "チャタリング防止"),
+        SettingSpec::toggle("shake_opt", KEYBOARD, "Anti-chatter"),
         SettingSpec::slider(
             "light_sleep",
             POWER,
-            "ライトスリープ",
+            "Light sleep",
             0.0,
             120.0,
             1.0,
-            "分",
+            "min",
         ),
     ];
-    settings[3].help = Some("無操作でライトを消すまでの時間 (分単位)".into());
+    settings[3].help = Some("Time until lights turn off without activity (minutes)".into());
     // mode バイト 0-19 = 公式 UI の L1-L20 (書き込みは 19 にクランプされるのを実機確認)。
     // OBS カメラによる実機撮像で同定した対応 (docs/PROTOCOL_NOTES.md 参照):
     //  SDK enum Y1 は 1..16 (Ripple..Jump) だが、実機の wire 1..15 は Y1[2..16] に
     //  対応し wire0=パレット静表示、wire16=カスタム表示、wire17-19=キー押下反応。
     //  全モードが選択パレット色を使い、sel=0 はファームの虹 (マルチカラー) 表示。
     let effects = vec![
-        LightEffect::new(0, "固定色").color().still(), // 選択パレット色を固定 (sel0=虹)
-        LightEffect::new(1, "虹の横ながれ").color().dir(), // 虹グラデが左右にスクロール
-        LightEffect::new(2, "ゆっくり変色").color(),   // 均一色 + ゆるやかな色相回転
-        LightEffect::new(3, "すばやく変色").color(),   // 色相が速く回転
-        LightEffect::new(4, "虹の市松").color(),       // 虹チェッカー盤
-        LightEffect::new(5, "虹のめぐり").color(),     // 色相循環グラデーション
-        LightEffect::new(6, "虹の明滅").color(),       // 色相循環 + 明滅
-        LightEffect::new(7, "ほのかな窓").color().dir(), // ほぼ均一 + 薄い光帯が移動
-        LightEffect::new(8, "ゆるやか変形").color(),   // 色パッチが染みのようにモーフ
-        LightEffect::new(9, "色帯シフト").color().dir(), // 広い色ゾーンが移動
-        LightEffect::new(10, "虹のうねり").color().dir(), // マルチバンドの虹波
-        LightEffect::new(11, "斜めの光帯").color().dir(), // 斜めの光帯が掃引
-        LightEffect::new(12, "コンフェッティ").color(), // ランダムな色ドットが点在
-        LightEffect::new(13, "虹のモザイク").color(),  // 細かい虹チェッカー
-        LightEffect::new(14, "光の雨").color().dir(),  // 色ドットが落下
-        LightEffect::new(15, "跳ねる光").color(),      // 点灯ブロックが跳んで移動
-        LightEffect::new(16, "カスタム").per_key(),    // isCustom セルのみ表示
-        LightEffect::new(17, "押下・まわり").color(),  // 押下キー周辺ブロック点灯
-        LightEffect::new(18, "押下・行").color(),      // 押下キーの行が点灯
-        LightEffect::new(19, "押下・広域").color(),    // 押下キー周囲の広範囲が点灯
+        LightEffect::new(0, "Static color").color().still(), // 選択パレット色を固定 (sel0=虹)
+        LightEffect::new(1, "Rainbow wave").color().dir(), // 虹グラデが左右にスクロール
+        LightEffect::new(2, "Slow color shift").color(),   // 均一色 + ゆるやかな色相回転
+        LightEffect::new(3, "Fast color shift").color(),   // 色相が速く回転
+        LightEffect::new(4, "Rainbow checker").color(),       // 虹チェッカー盤
+        LightEffect::new(5, "Rainbow cycle").color(),     // 色相循環グラデーション
+        LightEffect::new(6, "Rainbow blink").color(),       // 色相循環 + 明滅
+        LightEffect::new(7, "Soft window").color().dir(), // ほぼ均一 + 薄い光帯が移動
+        LightEffect::new(8, "Gentle morph").color(),   // 色パッチが染みのようにモーフ
+        LightEffect::new(9, "Color band shift").color().dir(), // 広い色ゾーンが移動
+        LightEffect::new(10, "Rainbow swell").color().dir(), // マルチバンドの虹波
+        LightEffect::new(11, "Diagonal light band").color().dir(), // 斜めの光帯が掃引
+        LightEffect::new(12, "Confetti").color(), // ランダムな色ドットが点在
+        LightEffect::new(13, "Rainbow mosaic").color(),  // 細かい虹チェッカー
+        LightEffect::new(14, "Light rain").color().dir(),  // 色ドットが落下
+        LightEffect::new(15, "Bouncing light").color(),      // 点灯ブロックが跳んで移動
+        LightEffect::new(16, "Custom").per_key(),    // isCustom セルのみ表示
+        LightEffect::new(17, "Reactive · surround").color(),  // 押下キー周辺ブロック点灯
+        LightEffect::new(18, "Reactive · row").color(),      // 押下キーの行が点灯
+        LightEffect::new(19, "Reactive · wide").color(),    // 押下キー周囲の広範囲が点灯
     ];
     Capabilities {
         settings,
         actions: vec![
-            ActionSpec::new("blackout", LIGHTING, "ブラックアウト切替")
-                .help("全 LED を一時消灯します。もう一度押すと元に戻ります。"),
-            ActionSpec::new("calibrate", PERFORMANCE, "磁軸キャリブレーション開始")
-                .help("キーの押下量センサーを調整します。開始後、全キーを数回強く押してください。"),
-            ActionSpec::new("calibrate_finish", PERFORMANCE, "キャリブレーション終了")
-                .help("押下データをデバイスに保存してキャリブレーションを終了します。"),
-            ActionSpec::new("reset_perf", SYSTEM, "性能設定を初期化")
-                .danger("全キーのトリガー・RT・デッドゾーンを初期値に戻します。"),
-            ActionSpec::new("reset_keymap", SYSTEM, "キー割り当てを初期化")
-                .danger("全レイヤーのキー割り当てを初期値に戻します。"),
-            ActionSpec::new("reset_lighting", SYSTEM, "ライティングを初期化")
-                .danger("ライティングを初期値に戻します。"),
-            ActionSpec::new("reset_advanced", SYSTEM, "高度キーを初期化")
-                .danger("すべての DKS/MPT/MT/TGL/END/SOCD/RS を解除します。"),
-            ActionSpec::new("export_config", SYSTEM, "設定をエクスポート")
-                .help("現在の全設定を JSON ファイルに書き出します。")
+            ActionSpec::new("blackout", LIGHTING, "Blackout toggle")
+                .help("Temporarily turns off all LEDs. Press again to restore."),
+            ActionSpec::new("calibrate", PERFORMANCE, "Start magnetic calibration")
+                .help("Adjusts the key travel sensors. After starting, press every key firmly a few times."),
+            ActionSpec::new("calibrate_finish", PERFORMANCE, "End calibration")
+                .help("Saves the press data to the device and ends calibration."),
+            ActionSpec::new("reset_perf", SYSTEM, "Reset performance settings")
+                .danger("Restores triggers, RT and dead zones for all keys to defaults."),
+            ActionSpec::new("reset_keymap", SYSTEM, "Reset key assignments")
+                .danger("Restores key assignments on all layers to defaults."),
+            ActionSpec::new("reset_lighting", SYSTEM, "Reset lighting")
+                .danger("Restores lighting to defaults."),
+            ActionSpec::new("reset_advanced", SYSTEM, "Reset advanced keys")
+                .danger("Clears all DKS/MPT/MT/TGL/END/SOCD/RS."),
+            ActionSpec::new("export_config", SYSTEM, "Export settings")
+                .help("Exports all current settings to a JSON file.")
                 .save_file(&["json"]),
-            ActionSpec::new("import_config", SYSTEM, "設定をインポート")
-                .help("エクスポートした JSON ファイルから全設定を書き戻します。")
+            ActionSpec::new("import_config", SYSTEM, "Import settings")
+                .help("Restores all settings from an exported JSON file.")
                 .file(&["json"]),
-            ActionSpec::new("reset_macro", SYSTEM, "マクロを初期化")
-                .danger("すべてのマクロを削除します。"),
-            ActionSpec::new("factory_reset", SYSTEM, "工場出荷時に戻す")
-                .danger("すべての設定 (キー・性能・ライト・マクロ) を初期化します。"),
+            ActionSpec::new("reset_macro", SYSTEM, "Reset macros")
+                .danger("Deletes all macros."),
+            ActionSpec::new("factory_reset", SYSTEM, "Factory reset")
+                .danger("Resets all settings (keys, performance, lighting, macros)."),
         ],
         profiles: (xs.configs > 1).then_some(ProfileCaps {
             count: xs.configs,
@@ -2138,7 +2138,7 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
             layers: (0..xs.layers)
                 .map(|i| {
                     if i == 0 {
-                        "メイン".into()
+                        "Main".into()
                     } else {
                         format!("Fn{i}")
                     }
@@ -2156,7 +2156,7 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
                 rt_first: true,
                 deadzones: true,
                 continuous_rt: true,
-                switch_types: xs.axes.iter().map(|a| format!("軸 {a}")).collect(),
+                switch_types: xs.axes.iter().map(|a| format!("Axis {a}")).collect(),
                 switch_ids: xs.axes.clone(),
                 per_key: true,
                 live_travel: true,
@@ -2175,10 +2175,10 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
                 max_events: max_ev,
                 max_delay_ms: 32767,
                 modes: vec![
-                    ChoiceOpt::new(0, "クリックで実行 (回数指定)"),
-                    ChoiceOpt::new(1, "クリックで実行"),
-                    ChoiceOpt::new(4, "押している間リピート (離すと即停止)"),
-                    ChoiceOpt::new(5, "押している間リピート (完了後停止)"),
+                    ChoiceOpt::new(0, "Click to run (set count)"),
+                    ChoiceOpt::new(1, "Click to run"),
+                    ChoiceOpt::new(4, "Repeat while held (stops immediately on release)"),
+                    ChoiceOpt::new(5, "Repeat while held (stops after finishing)"),
                 ],
                 repeat_modes: vec![0],
                 names: false,
@@ -2192,18 +2192,18 @@ fn build_caps(xs: &XsydInfo) -> Capabilities {
             .map(|(i, &a)| LightArea {
                 id: a,
                 name: if a == 0 {
-                    "メインキーボード".into()
+                    "Main keyboard".into()
                 } else {
-                    format!("デコレーション {i}")
+                    format!("Decoration {i}")
                 },
                 effects: effects.clone(),
                 brightness_max: 100,
                 speed_max: 100,
-                directions: vec!["正方向".into(), "逆方向".into()],
+                directions: vec!["Forward".into(), "Reverse".into()],
                 switchable: true,
                 // Keyboard (area 0) で DoubleLighting 機のみ上/下ゾーン開閉がある。
                 zones: if a == 0 && xs.double_lighting {
-                    vec!["上部ライト".into(), "下部ライト".into()]
+                    vec!["Top light".into(), "Bottom light".into()]
                 } else {
                     vec![]
                 },
@@ -2235,55 +2235,55 @@ fn xsyd_catalog() -> Vec<KeyGroup> {
     vec![
         devhub_core::keys::basic_group(),
         g(
-            "マウス",
+            "Mouse",
             &[
-                (16640, "マウス左", "M左"),
-                (16896, "マウス右", "M右"),
-                (17152, "マウス中", "M中"),
-                (17408, "マウス進む", "M進"),
-                (17664, "マウス戻る", "M戻"),
-                (18945, "ホイール上", "W↑"),
-                (19201, "ホイール下", "W↓"),
+                (16640, "Mouse Left", "ML"),
+                (16896, "Mouse Right", "MR"),
+                (17152, "Mouse Middle", "MM"),
+                (17408, "Mouse Forward", "MF"),
+                (17664, "Mouse Back", "MB"),
+                (18945, "Wheel Up", "W↑"),
+                (19201, "Wheel Down", "W↓"),
             ],
         ),
         g(
-            "メディア",
+            "Media",
             &[
-                (0x20CD, "再生/一時停止", "⏯"),
-                (8373, "次の曲", "⏭"),
-                (8374, "前の曲", "⏮"),
-                (0x20E9, "音量 +", "🔊"),
-                (0x20EA, "音量 −", "🔉"),
-                (8418, "ミュート", "🔇"),
+                (0x20CD, "Play/Pause", "⏯"),
+                (8373, "Next Track", "⏭"),
+                (8374, "Previous Track", "⏮"),
+                (0x20E9, "Volume +", "🔊"),
+                (0x20EA, "Volume −", "🔉"),
+                (8418, "Mute", "🔇"),
             ],
         ),
         g(
-            "レイヤー",
+            "Layers",
             &[
-                (61696, "メインレイヤーへ", "L0"),
-                (61697, "Fn1 レイヤーへ", "Fn1"),
-                (61698, "Fn2 レイヤーへ", "Fn2"),
-                (61699, "Fn3 レイヤーへ", "Fn3"),
+                (61696, "To main layer", "L0"),
+                (61697, "To Fn1 layer", "Fn1"),
+                (61698, "To Fn2 layer", "Fn2"),
+                (61699, "To Fn3 layer", "Fn3"),
             ],
         ),
         g(
-            "システム",
+            "System",
             &[
-                (61957, "構成 1 に切替", "P1"),
-                (61958, "構成 2 に切替", "P2"),
-                (61961, "Win キーロック", "WinL"),
-                (61955, "磁軸キャリブレーション (長押し)", "Cal"),
-                (61952, "初期化 (長押し)", "Rst"),
+                (61957, "Switch to config 1", "P1"),
+                (61958, "Switch to config 2", "P2"),
+                (61961, "Win key lock", "WinL"),
+                (61955, "Magnetic calibration (hold)", "Cal"),
+                (61952, "Factory reset (hold)", "Rst"),
             ],
         ),
         g(
-            "ライティング",
+            "Lighting",
             &[
-                (62208, "ライティングモード切替", "L模"),
-                (62209, "ライティング色切替", "L色"),
-                (62210, "明るさ +", "L+"),
-                (62211, "明るさ −", "L−"),
-                (62215, "ライト ON/OFF", "L⏻"),
+                (62208, "Next lighting mode", "LMd"),
+                (62209, "Next lighting color", "LCl"),
+                (62210, "Brightness +", "L+"),
+                (62211, "Brightness −", "L−"),
+                (62215, "Lights ON/OFF", "L⏻"),
             ],
         ),
     ]
@@ -2388,7 +2388,7 @@ impl DeviceDriver for XsydDriver {
             for id in 0..slots {
                 let def = match self.read_macro_mode(id) {
                     Ok((true, act, rep, mode)) => Some(MacroDef {
-                        name: format!("マクロ {}", id + 1),
+                        name: format!("Macro {}", id + 1),
                         events: self.read_macro_events(id, act)?,
                         mode,
                         repeat: rep,
@@ -2542,9 +2542,9 @@ impl DeviceDriver for XsydDriver {
                 Ok(ActionOutcome {
                     message: Some(
                         if active {
-                            "ブラックアウトを解除しました"
+                            "Blackout off"
                         } else {
-                            "ブラックアウトを有効にしました"
+                            "Blackout on"
                         }
                         .into(),
                     ),
@@ -2558,8 +2558,7 @@ impl DeviceDriver for XsydDriver {
                 self.cmd(grp::GLOBAL, gfs::CALIBRATION, &[0])?;
                 Ok(ActionOutcome {
                     message: Some(
-                        "キャリブレーションを開始しました。全キーを数回強く押してから \
-                         「キャリブレーション終了」を実行してください"
+                        "Calibration started. Press every key firmly a few times, then run \"End calibration\""
                             .into(),
                     ),
                     reload: false,
@@ -2569,7 +2568,7 @@ impl DeviceDriver for XsydDriver {
                 self.cmd(grp::GLOBAL, gfs::CALIBRATION, &[1])?;
                 self.save(scope::CALIBRATION)?;
                 Ok(ActionOutcome {
-                    message: Some("キャリブレーションを終了しました".into()),
+                    message: Some("Calibration finished".into()),
                     reload: true,
                 })
             }
@@ -2582,7 +2581,7 @@ impl DeviceDriver for XsydDriver {
                 }
                 self.save(scope::LAYOUT)?;
                 Ok(ActionOutcome {
-                    message: Some("キー割り当てを初期値に戻しました".into()),
+                    message: Some("Key assignments restored to defaults".into()),
                     reload: true,
                 })
             }
@@ -2605,21 +2604,21 @@ impl DeviceDriver for XsydDriver {
                 )?;
                 self.save(scope::LIGHTING)?;
                 Ok(ActionOutcome {
-                    message: Some("ライティングを初期値に戻しました".into()),
+                    message: Some("Lighting restored to defaults".into()),
                     reload: true,
                 })
             }
             "factory_reset" => {
                 self.cmd(grp::GLOBAL, gfs::RESET_FACTORY, &[scope::ALL])?;
                 Ok(ActionOutcome {
-                    message: Some("工場出荷時設定に戻しました".into()),
+                    message: Some("Factory settings restored".into()),
                     reload: true,
                 })
             }
             // 設定の書き出し/読み込み (自前 JSON — 公式の暗号化形式とは非互換)。
             // {app, model, name, state: DeviceState} か DeviceState 単体を受け付ける。
             "export_config" => {
-                let path = file.ok_or_else(|| HubError::Invalid("保存先".into()))?;
+                let path = file.ok_or_else(|| HubError::Invalid("Save location".into()))?;
                 let state = self.read()?;
                 let doc = serde_json::json!({
                     "app": "device-hub",
@@ -2630,16 +2629,16 @@ impl DeviceDriver for XsydDriver {
                 let json = serde_json::to_string_pretty(&doc)
                     .map_err(|e| HubError::Invalid(format!("JSON: {e}")))?;
                 std::fs::write(path, json)
-                    .map_err(|e| HubError::Io(format!("ファイル書き出し: {e}")))?;
+                    .map_err(|e| HubError::Io(format!("File write: {e}")))?;
                 Ok(ActionOutcome {
-                    message: Some(format!("設定を {} に書き出しました", path.display())),
+                    message: Some(format!("Exported settings to {}", path.display())),
                     reload: false,
                 })
             }
             "import_config" => {
-                let path = file.ok_or_else(|| HubError::Invalid("ファイル".into()))?;
+                let path = file.ok_or_else(|| HubError::Invalid("File".into()))?;
                 let text = std::fs::read_to_string(path)
-                    .map_err(|e| HubError::Io(format!("ファイル読み込み: {e}")))?;
+                    .map_err(|e| HubError::Io(format!("File read: {e}")))?;
                 let v: serde_json::Value = serde_json::from_str(&text)
                     .map_err(|e| HubError::Invalid(format!("JSON: {e}")))?;
                 let st: DeviceState = if v.get("keyboards").is_some() || v.get("data").is_some() {
@@ -2648,17 +2647,17 @@ impl DeviceDriver for XsydDriver {
                     self.official_to_state(&plain)?
                 } else {
                     serde_json::from_value(v.get("state").cloned().unwrap_or(v))
-                        .map_err(|e| HubError::Invalid(format!("設定データ: {e}")))?
+                        .map_err(|e| HubError::Invalid(format!("Settings data: {e}")))?
                 };
                 self.import_state(&st)?;
                 Ok(ActionOutcome {
-                    message: Some("設定をインポートしました".into()),
+                    message: Some("Settings imported".into()),
                     reload: true,
                 })
             }
-            "reset_perf" => self.reset_scope(scope::PERFORMANCE, "性能設定"),
-            "reset_advanced" => self.reset_scope(scope::HIGHER_KEY, "高度キー"),
-            "reset_macro" => self.reset_scope(scope::MACRO, "マクロ"),
+            "reset_perf" => self.reset_scope(scope::PERFORMANCE, "Performance settings"),
+            "reset_advanced" => self.reset_scope(scope::HIGHER_KEY, "Advanced Keys"),
+            "reset_macro" => self.reset_scope(scope::MACRO, "Macros"),
             _ => Err(HubError::Unsupported("action")),
         }
     }
@@ -2939,7 +2938,7 @@ impl DeviceDriver for XsydDriver {
             .is_some_and(|pins| !pins.is_empty())
         {
             return Err(HubError::Protocol(
-                "DirectDrive: LED の復元が完了していません".into(),
+                "DirectDrive: LED restore is not complete".into(),
             ));
         }
         let r = self.cmd(grp::LIGHTING, sub::READ, &[area, 0])?;
@@ -3079,7 +3078,7 @@ mod tests {
         // 外部トラフィック検出で受動モードが立っている。
         assert!(
             *d.axis_passive.lock().unwrap() > Instant::now(),
-            "外部フレームだけのはずなので受動モードになる"
+            "Should be passive mode since there are only external frames"
         );
     }
 

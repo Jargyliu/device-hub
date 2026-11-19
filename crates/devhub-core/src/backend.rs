@@ -42,13 +42,13 @@ pub enum HubError {
 impl fmt::Display for HubError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            HubError::NotFound(id) => write!(f, "デバイスが見つかりません: {id}"),
-            HubError::Unsupported(what) => write!(f, "この機能には対応していません: {what}"),
-            HubError::NotImplemented(what) => write!(f, "未実装です: {what}"),
-            HubError::Io(e) => write!(f, "通信エラー: {e}"),
-            HubError::Protocol(e) => write!(f, "応答エラー: {e}"),
-            HubError::Invalid(e) => write!(f, "値が不正です: {e}"),
-            HubError::Disconnected => write!(f, "デバイスが切断されました"),
+            HubError::NotFound(id) => write!(f, "Device not found: {id}"),
+            HubError::Unsupported(what) => write!(f, "Not supported: {what}"),
+            HubError::NotImplemented(what) => write!(f, "Not implemented: {what}"),
+            HubError::Io(e) => write!(f, "Communication error: {e}"),
+            HubError::Protocol(e) => write!(f, "Response error: {e}"),
+            HubError::Invalid(e) => write!(f, "Invalid value: {e}"),
+            HubError::Disconnected => write!(f, "Device disconnected"),
         }
     }
 }

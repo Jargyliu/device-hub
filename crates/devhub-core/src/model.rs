@@ -197,7 +197,7 @@ impl ChoiceOpt {
 #[derive(Clone, Debug, PartialEq)]
 pub enum SettingKind {
     Toggle,
-    /// 連続値。`unit` は表示用 ("ms", "mm", "°", "分" など)。
+    /// 連続値。`unit` は表示用 ("ms", "mm", "°", "min" など)。
     Slider {
         min: f32,
         max: f32,
@@ -726,7 +726,7 @@ pub struct KeyChoice {
     pub short: Option<String>,
 }
 
-/// 割り当て候補のグループ ("基本" / "マウス" / "メディア" / "ライティング" / "レイヤー" / "システム" / "ゲームパッド")。
+/// 割り当て候補のグループ ("基本" / "Mouse" / "Media" / "Lighting" / "Layers" / "System" / "ゲームパッド")。
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyGroup {
     pub name: String,
@@ -994,7 +994,7 @@ pub struct LightArea {
     pub directions: Vec<String>,
     /// 全体 ON/OFF を持つか。
     pub switchable: bool,
-    /// 上下分割ライトのゾーン名 (例: ["上部ライト", "下部ライト"])。
+    /// 上下分割ライトのゾーン名 (例: ["Top light", "Bottom light"])。
     /// 空なら単一ゾーン。非空なら `LightingState.zone_on` が各ゾーンの開閉。
     pub zones: Vec<String>,
     /// キーごとのカスタム色を持てるか (キーボードエリアのみ)。
@@ -1041,7 +1041,7 @@ pub struct LightingState {
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyboardCaps {
     pub layout: Vec<LayoutKey>,
-    /// レイヤー名 ("メイン", "Fn1" …)。
+    /// レイヤー名 ("Main", "Fn1" …)。
     pub layers: Vec<String>,
     /// 割り当て候補 (グループ順に UI に並ぶ)。
     pub catalog: Vec<KeyGroup>,

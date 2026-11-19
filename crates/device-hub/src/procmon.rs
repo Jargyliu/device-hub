@@ -355,7 +355,7 @@ impl Shell {
             }
             if had > 0 && q.is_empty() {
                 self.toast(
-                    format!("予約していたプロファイル分を適用しました ({did})"),
+                    format!("Applied the queued profile ({did})"),
                     false,
                     cx,
                 );
@@ -420,7 +420,7 @@ impl Shell {
                 }
                 if restored > 0 {
                     self.toast(
-                        format!("復帰: ルール解除に伴い {restored} 件のプロファイルを適用"),
+                        format!("Restored: applied {restored} profiles after the rule ended"),
                         false,
                         cx,
                     );
@@ -441,27 +441,27 @@ impl Shell {
         let changed = !ev.leaves.is_empty() || !ev.enters.is_empty();
         let mut msgs: Vec<String> = vec![];
         let detail = |res: Option<(usize, usize, usize)>| match res {
-            None => "未検出".to_string(),
+            None => "Not detected".to_string(),
             Some((sent, held, n)) => {
                 if held > 0 {
                     if sent > 0 {
-                        format!("{sent}/{n} 件・残り予約")
+                        format!("{sent}/{n} applied · rest queued")
                     } else {
-                        format!("{n} 件を予約")
+                        format!("{n} queued")
                     }
                 } else {
-                    format!("{n} 件")
+                    format!("{n}")
                 }
             }
         };
         for (device, name) in &ev.leaves {
             let res = self.apply_profile_named(device, name);
-            msgs.push(format!("復帰「{name}」{}", detail(res)));
+            msgs.push(format!("Restore \"{name}\" {}", detail(res)));
         }
         for (device, names) in &ev.enters {
             for name in names {
                 let res = self.apply_profile_named(device, name);
-                msgs.push(format!("適用「{name}」{}", detail(res)));
+                msgs.push(format!("Apply \"{name}\" {}", detail(res)));
             }
         }
         self.proc_states = ev.now;

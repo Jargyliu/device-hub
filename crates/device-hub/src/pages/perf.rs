@@ -74,9 +74,9 @@ impl Shell {
         if let Some(msg) = sp.confirm.clone() {
             let c2 = change.clone();
             self.confirm(
-                "確認",
+                "Confirm",
                 &msg,
-                "変更する",
+                "Change",
                 false,
                 Rc::new(move |this, _, cx| this.apply(c2.clone(), cx)),
                 cx,
@@ -223,11 +223,11 @@ impl Shell {
         let live = self.cur().and_then(|s| s.poll.as_ref()).map(|st| {
             let v = st.peak_hz.or(st.seg_hz).unwrap_or(st.hz);
             if !self.last_window_active {
-                format!("背面の受信 {:.0} 件/秒 (参考値)", st.hz)
+                format!("Background receive {:.0}/s (approx.)", st.hz)
             } else if v < 1. {
-                "実測: マウスを動かすと表示".to_string()
+                "Measured: move the mouse to show".to_string()
             } else {
-                format!("実測ピーク {v:.0} Hz")
+                format!("Measured peak {v:.0} Hz")
             }
         });
         let live = match self.cur().and_then(|s| {
@@ -238,9 +238,9 @@ impl Shell {
         }) {
             Some(snap) => {
                 let u = match snap.status {
-                    devhub_polling::Status::Waiting => "USB 計測: 待機中".to_string(),
-                    devhub_polling::Status::Live => format!("USB 実測 {} Hz", snap.hz),
-                    _ => "USB 計測: 停止".to_string(),
+                    devhub_polling::Status::Waiting => "USB measurement: waiting".to_string(),
+                    devhub_polling::Status::Live => format!("USB measured {} Hz", snap.hz),
+                    _ => "USB measurement: stopped".to_string(),
                 };
                 Some(match live {
                     Some(l) => format!("{l} · {u}"),
@@ -528,7 +528,7 @@ impl Shell {
                 )
             });
         let control: AnyElement = match (&sp.kind, v) {
-            (_, None) => ui::faint("読み取れません").into_any_element(),
+            (_, None) => ui::faint("Unreadable").into_any_element(),
             (SettingKind::Choice { options }, Some(v)) => {
                 let cur = v.as_choice();
                 let mut chips = div().flex().flex_wrap().gap(px(6.));
@@ -685,7 +685,7 @@ impl Shell {
                 .border_color(if cur_preset.is_none() { p.accent } else { p.hair })
                 .bg(if cur_preset.is_none() { p.accent_soft } else { theme::alpha(p.faint, 0.0) })
                 .text_color(if cur_preset.is_none() { p.fg } else { p.faint })
-                .child("カスタム"),
+                .child("Custom"),
         );
         // 点の追加/削除
         let n = curve.points.len();
@@ -695,25 +695,25 @@ impl Shell {
         let pts_tools = div()
             .flex()
             .gap(px(6.))
-            .child(ui::button("ada-add", "点を追加", Some("plus"), Btn::Ghost, cx, move |this, _, cx| {
+            .child(ui::button("ada-add", "Add point", Some("plus"), Btn::Ghost, cx, move |this, _, cx| {
                 let mut c = c_add.clone();
                 if c.points.len() >= ac.max_points {
-                    this.toast(format!("点は最大 {} 個です", ac.max_points), true, cx);
+                    this.toast(format!("Up to {} points", ac.max_points), true, cx);
                     return;
                 }
                 let last = c.points.last().copied().unwrap_or(AdaptivePoint { speed: 0, ratio: 1. });
                 let speed = (last.speed + 15).min(smax);
                 if speed <= last.speed {
-                    this.toast("右端に空きがありません", true, cx);
+                    this.toast("No room at the right edge", true, cx);
                     return;
                 }
                 c.points.push(AdaptivePoint { speed, ratio: last.ratio });
                 send(this, c, cx);
             }))
-            .child(ui::button("ada-del", "点を削除", Some("minus"), Btn::Ghost, cx, move |this, _, cx| {
+            .child(ui::button("ada-del", "Remove point", Some("minus"), Btn::Ghost, cx, move |this, _, cx| {
                 let mut c = c_del.clone();
                 if c.points.len() <= ac.min_points {
-                    this.toast(format!("点は最低 {} 個必要です", ac.min_points), true, cx);
+                    this.toast(format!("At least {} points are required", ac.min_points), true, cx);
                     return;
                 }
                 c.points.pop();
@@ -731,11 +731,11 @@ impl Shell {
             .pt(px(6.))
             .gap(px(10.))
             .child(ui::row_first(
-                "有効",
-                Some("マウスの速度に応じて DPI を自動で変えます (倍率 1.0 = そのまま)"),
+                "Enabled",
+                Some("Changes DPI automatically based on mouse speed (×1.0 = unchanged)"),
                 toggle,
             ))
-            .child(div().flex().items_center().gap(px(8.)).child(ui::faint("プリセット")).child(presets))
+            .child(div().flex().items_center().gap(px(8.)).child(ui::faint("Presets")).child(presets))
             .child(div().when(!curve.enabled, |d| d.opacity(0.5)).child(graph))
             .child(
                 div()
@@ -745,11 +745,11 @@ impl Shell {
                     .gap(px(8.))
                     .child(pts_tools)
                     .child(div().flex_1().min_w(px(160.)).text_size(px(11.)).text_color(p.faint).child(format!(
-                        "{n} 点 · 点をドラッグして調整 · {pts_txt}"
+                        "{n} points · drag points to adjust · {pts_txt}"
                     ))),
             );
         Some(
-            ui::card_titled("AdaDPI (速度連動 DPI)", "chart-spline", None)
+            ui::card_titled("AdaDPI (speed-based DPI)", "chart-spline", None)
                 .child(body)
                 .into_any_element(),
         )
@@ -917,11 +917,11 @@ impl Shell {
                     .justify_between()
                     .text_size(px(10.))
                     .text_color(p.faint)
-                    .child(format!("倍率 ×{rmax:.1}"))
-                    .child("─ 1.0 = 等倍"),
+                    .child(format!("Multiplier ×{rmax:.1}"))
+                    .child("─ 1.0 = unchanged"),
             )
             .child(plot)
             .child(xlab)
-            .child(div().text_size(px(10.)).text_color(p.faint).child("← 遅い     マウスの速度     速い →"))
+            .child(div().text_size(px(10.)).text_color(p.faint).child("← slow     mouse speed     fast →"))
     }
 }

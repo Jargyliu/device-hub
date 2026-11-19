@@ -56,7 +56,7 @@ pub const HID_KEYS: &[(u16, &str, &str)] = &[
     (0x31, "\\", "\\"),
     (0x33, ";", ";"),
     (0x34, "'", "'"),
-    (0x35, "` (半角/全角)", "`"),
+    (0x35, "` (Hankaku/Zenkaku)", "`"),
     (0x36, ",", ","),
     (0x37, ".", "."),
     (0x38, "/", "/"),
@@ -117,19 +117,19 @@ pub const HID_KEYS: &[(u16, &str, &str)] = &[
     (0x71, "F22", "F22"),
     (0x72, "F23", "F23"),
     (0x73, "F24", "F24"),
-    (0x87, "Ro (JIS \\_)", "ろ"),
-    (0x88, "かな", "かな"),
+    (0x87, "Ro (JIS \\_)", "Ro (JIS)"),
+    (0x88, "Kana", "Kana"),
     (0x89, "¥ (JIS)", "¥"),
-    (0x8A, "変換", "変換"),
-    (0x8B, "無変換", "無変換"),
-    (0xE0, "左 Ctrl", "Ctrl"),
-    (0xE1, "左 Shift", "Shift"),
-    (0xE2, "左 Alt", "Alt"),
-    (0xE3, "左 Win", "Win"),
-    (0xE4, "右 Ctrl", "RCtrl"),
-    (0xE5, "右 Shift", "RShift"),
-    (0xE6, "右 Alt", "RAlt"),
-    (0xE7, "右 Win", "RWin"),
+    (0x8A, "Henkan", "Henkan"),
+    (0x8B, "Muhenkan", "Muhenkan"),
+    (0xE0, "Left Ctrl", "Ctrl"),
+    (0xE1, "Left Shift", "Shift"),
+    (0xE2, "Left Alt", "Alt"),
+    (0xE3, "Left Win", "Win"),
+    (0xE4, "Right Ctrl", "RCtrl"),
+    (0xE5, "Right Shift", "RShift"),
+    (0xE6, "Right Alt", "RAlt"),
+    (0xE7, "Right Win", "RWin"),
 ];
 
 /// usage → 一覧名。未知なら `0xNN`。
@@ -180,16 +180,16 @@ pub fn mod_bit(usage: u16) -> Option<u8> {
 
 pub fn mouse_fn_name(m: MouseFn) -> &'static str {
     match m {
-        MouseFn::Left => "左クリック",
-        MouseFn::Right => "右クリック",
-        MouseFn::Middle => "中クリック",
-        MouseFn::Back => "戻る",
-        MouseFn::Forward => "進む",
-        MouseFn::ScrollUp => "スクロール上",
-        MouseFn::ScrollDown => "スクロール下",
-        MouseFn::ScrollLeft => "スクロール左",
-        MouseFn::ScrollRight => "スクロール右",
-        MouseFn::DoubleClick => "ダブルクリック",
+        MouseFn::Left => "Left Click",
+        MouseFn::Right => "Right Click",
+        MouseFn::Middle => "Middle Click",
+        MouseFn::Back => "Back",
+        MouseFn::Forward => "Forward",
+        MouseFn::ScrollUp => "Scroll Up",
+        MouseFn::ScrollDown => "Scroll Down",
+        MouseFn::ScrollLeft => "Scroll Left",
+        MouseFn::ScrollRight => "Scroll Right",
+        MouseFn::DoubleClick => "Double Click",
     }
 }
 
@@ -208,20 +208,20 @@ pub const MOUSE_FNS: &[MouseFn] = &[
 
 pub fn media_fn_name(m: MediaFn) -> &'static str {
     match m {
-        MediaFn::PlayPause => "再生/一時停止",
-        MediaFn::Stop => "停止",
-        MediaFn::Next => "次の曲",
-        MediaFn::Prev => "前の曲",
-        MediaFn::VolumeUp => "音量 +",
-        MediaFn::VolumeDown => "音量 −",
-        MediaFn::Mute => "ミュート",
-        MediaFn::Calculator => "電卓",
-        MediaFn::MyComputer => "マイコンピュータ",
-        MediaFn::Browser => "ブラウザ",
-        MediaFn::Mail => "メール",
-        MediaFn::BrightnessUp => "画面の明るさ +",
-        MediaFn::BrightnessDown => "画面の明るさ −",
-        MediaFn::Refresh => "更新",
+        MediaFn::PlayPause => "Play/Pause",
+        MediaFn::Stop => "Stop",
+        MediaFn::Next => "Next Track",
+        MediaFn::Prev => "Previous Track",
+        MediaFn::VolumeUp => "Volume +",
+        MediaFn::VolumeDown => "Volume −",
+        MediaFn::Mute => "Mute",
+        MediaFn::Calculator => "Calculator",
+        MediaFn::MyComputer => "My Computer",
+        MediaFn::Browser => "Browser",
+        MediaFn::Mail => "Mail",
+        MediaFn::BrightnessUp => "Screen Brightness +",
+        MediaFn::BrightnessDown => "Screen Brightness −",
+        MediaFn::Refresh => "Update",
     }
 }
 
@@ -247,7 +247,7 @@ pub const MEDIA_FNS: &[MediaFn] = &[
 pub fn basic_group() -> KeyGroup {
     let mut seen = std::collections::BTreeSet::new();
     KeyGroup {
-        name: "基本キー".into(),
+        name: "Basic keys".into(),
         keys: HID_KEYS
             .iter()
             .filter(|k| seen.insert(k.0))

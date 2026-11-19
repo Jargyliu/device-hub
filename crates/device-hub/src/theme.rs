@@ -38,12 +38,12 @@ pub fn accent_index() -> u8 {
 
 /// アクセント候補 (名前, 色)。
 pub const ACCENTS: &[(&str, u32)] = &[
-    ("アイス", 0x4cb4ff),
-    ("ミント", 0x34d6a8),
-    ("ライラック", 0xa98bff),
-    ("サンセット", 0xff8a5c),
-    ("ローズ", 0xff5c8a),
-    ("ゴールド", 0xf5c24c),
+    ("Ice", 0x4cb4ff),
+    ("Mint", 0x34d6a8),
+    ("Lilac", 0xa98bff),
+    ("Sunset", 0xff8a5c),
+    ("Rose", 0xff5c8a),
+    ("Gold", 0xf5c24c),
 ];
 
 static FONT_SEL: AtomicU8 = AtomicU8::new(0);
@@ -55,13 +55,13 @@ static FONT_SEL: AtomicU8 = AtomicU8::new(0);
 pub const FONT_OPTIONS: &[(&str, &str, &str, &[&str])] = &[
     (
         "modern",
-        "モダン (Geist + IBM Plex Sans JP)",
+        "Modern (Geist + IBM Plex Sans JP)",
         "Geist",
         &["IBM Plex Sans JP", "Yu Gothic UI"],
     ),
     (
         "rounded",
-        "ラウンド (Geist + Zen Maru Gothic)",
+        "Rounded (Geist + Zen Maru Gothic)",
         "Geist",
         &["Zen Maru Gothic", "IBM Plex Sans JP", "Yu Gothic UI"],
     ),
@@ -158,7 +158,7 @@ pub fn install_fonts(cx: &App) {
     }
     let fonts: Vec<Cow<'static, [u8]>> = raw.into_iter().map(Cow::Borrowed).collect();
     if let Err(e) = cx.text_system().add_fonts(fonts) {
-        eprintln!("[devhub] フォントの登録に失敗: {e}");
+        eprintln!("[devhub] Failed to register font: {e}");
     }
 }
 

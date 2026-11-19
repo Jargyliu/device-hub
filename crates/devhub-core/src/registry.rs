@@ -157,7 +157,7 @@ pub const KNOWN: &[KnownDevice] = &[
         kind: DeviceKind::Mouse,
         vendor: "ATK",
         model: "atk-dongle",
-        name: "ATK ワイヤレスドングル",
+        name: "ATK Wireless Dongle",
         transport: Transport::Wireless24G,
         driver: DriverKind::Atk,
         verified: true,
@@ -249,7 +249,7 @@ pub const KNOWN: &[KnownDevice] = &[
         model: "lamzu-dongle",
         // 初期値は受信機名 — ドライバが GetDevicePID でペア先を確定してから
         // info.name/model を製品名 (例: LAMZU Maya X V2 / maya-x-v2) に確定する。
-        name: "LAMZU 8K レシーバー",
+        name: "LAMZU 8K Receiver",
         transport: Transport::Wireless24G,
         driver: DriverKind::Lamzu,
         verified: true,
@@ -319,7 +319,7 @@ pub const KNOWN: &[KnownDevice] = &[
         kind: DeviceKind::Mouse,
         vendor: "LAMZU",
         model: "lamzu-dongle",
-        name: "LAMZU 8K レシーバー",
+        name: "LAMZU 8K Receiver",
         transport: Transport::Wireless24G,
         driver: DriverKind::Lamzu,
         verified: false,

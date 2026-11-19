@@ -126,7 +126,7 @@ impl Shell {
                     }
                 }));
                 body = body.child(ui::row_first(
-                    "点灯",
+                    "On",
                     None,
                     ui::toggle(format!("light-on-{aid}"), ls.on, cx, move |this, _, cx| {
                         s2(this, cx)
@@ -149,7 +149,7 @@ impl Shell {
                         l.on = l.zone_on.iter().any(|&z| z);
                     }));
                     body = body.child(ui::row(
-                        &format!("{zname}スイッチ"),
+                        &format!("{zname} switch"),
                         None,
                         ui::toggle(
                             format!("light-zone-{aid}-{zi}"),
@@ -163,8 +163,8 @@ impl Shell {
                 if area.zones.len() > 1 {
                     let link = self.light_link;
                     body = body.child(ui::row(
-                        "ライティング連動",
-                        Some("ON のとき上/下スイッチを同時に動かします"),
+                        "Sync lighting",
+                        Some("When on, the upper and lower switches move together"),
                         ui::toggle(format!("light-link-{aid}"), link, cx, |this, _, _| {
                             this.light_link = !this.light_link;
                         }),
@@ -178,14 +178,14 @@ impl Shell {
                     .flex()
                     .flex_col()
                     .gap(px(10.))
-                    .child(ui::faint("エフェクト"))
+                    .child(ui::faint("Effect"))
                     .child(effects),
             );
             if eff.as_ref().is_some_and(|e| e.color) {
                 let cur = ls.color;
                 let base = ls.clone();
                 body = body.child(ui::row(
-                    "色",
+                    "Color",
                     None,
                     div()
                         .id("light-color")
@@ -199,7 +199,7 @@ impl Shell {
                             let base = base.clone();
                             overlay::pick_color(
                                 this,
-                                "ライティングの色",
+                                "Lighting color",
                                 cur,
                                 w,
                                 cx,
@@ -262,7 +262,7 @@ impl Shell {
                             .on_click(cx.listener(move |this, _, _, cx| s2(this, cx))),
                     );
                 }
-                body = body.child(ui::row("カラー", None, dots));
+                body = body.child(ui::row("Color", None, dots));
             }
             {
                 let base = ls.clone();
@@ -293,7 +293,7 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "明るさ",
+                    "Brightness",
                     None,
                     ui::slider_value_edit(
                         "light-br",
@@ -336,7 +336,7 @@ impl Shell {
                     f.clone(),
                 );
                 body = body.child(ui::row(
-                    "速度",
+                    "Speed",
                     None,
                     ui::slider_value_edit(
                         "light-sp",
@@ -353,7 +353,7 @@ impl Shell {
             if eff.as_ref().is_some_and(|e| e.direction) && !area.directions.is_empty() {
                 let base = ls.clone();
                 body = body.child(ui::row(
-                    "方向",
+                    "Direction",
                     None,
                     ui::segmented(
                         "light-dir",
@@ -386,7 +386,7 @@ impl Shell {
                         .flex()
                         .flex_col()
                         .gap(px(10.))
-                        .child(ui::faint("彩度")),
+                        .child(ui::faint("Saturation")),
                 );
                 for (ch_i, ch_name, ch_v) in [(0usize, "R", cc.r), (1, "G", cc.g), (2, "B", cc.b)] {
                     let base = ls.clone();
@@ -528,17 +528,17 @@ impl Shell {
                             .flex()
                             .items_center()
                             .gap(px(10.))
-                            .child(ui::button("fx-goto", "ライブライティング動作中", Some("zap"), Btn::Ghost, cx, |this, _, cx| {
+                            .child(ui::button("fx-goto", "Live lighting active", Some("zap"), Btn::Ghost, cx, |this, _, cx| {
                                 this.tab = Tab::Live;
                                 cx.notify();
                             }))
-                            .child(ui::faint("実機の LED はライブライティングが駆動しています (停止すると通常の点灯に戻ります)")),
+                            .child(ui::faint("Live lighting is driving the device LEDs (stopping returns to normal lighting)")),
                     );
                 } else if area.direct_drive && live.is_none() {
                     let dd_label = if dd_on {
-                        "実機プレビュー停止"
+                        "Stop device preview"
                     } else {
-                        "実機でプレビュー"
+                        "Preview on device"
                     };
                     let dd_style = if dd_on { Btn::Primary } else { Btn::Ghost };
                     prev_body = prev_body.child(
@@ -561,27 +561,27 @@ impl Shell {
                                 },
                             ))
                             .child(ui::faint(
-                                "ON の間、上のイメージを実機の LED に直接流します",
+                                "While on, streams the image above directly to the device LEDs",
                             )),
                     );
                 }
                 prev_body = prev_body.child(ui::faint(if live.is_some() {
-                    "実機の現在の点灯を読み取って表示しています"
+                    "Showing the device's current lighting as read back"
                 } else {
-                    "設定値をもとにしたイメージです (本体の実際の点灯とは近似です)"
+                    "A preview based on the settings (approximates the actual lighting)"
                 }));
                 // isCustom セルはベースモードに関わらず点灯する — 残っているのに
                 // カスタムモードを選んでいない場合、編集経路を案内する。
                 if !ls.per_key.is_empty() {
                     prev_body = prev_body.child(ui::faint(format!(
-                        "{} キーにカスタム色が設定されています (下の「キーごとの色」で編集・クリアできます)",
+                        "{} keys have custom colors (edit or clear them under \"Per-key color\" below)",
                         ls.per_key.len()
                     )));
                 }
                 // DirectDrive 対応エリアでは「実機でプレビュー」トグルを出す。
                 // ON の間、上の colors を ~150ms 間引きで [5,5] フレームとして実機へ流す;
                 // OFF で DdStop を送りファーム側のアニメーションに戻す。
-                col = col.child(ui::card_titled("プレビュー", "eye", None).child(prev_body));
+                col = col.child(ui::card_titled("Preview", "eye", None).child(prev_body));
             }
 
             // キーごとの色。
@@ -640,7 +640,7 @@ impl Shell {
                                 .on_click(cx.listener(move |this, _, w, cx| {
                                     overlay::pick_color(
                                         this,
-                                        "塗る色",
+                                        "Paint color",
                                         paint,
                                         w,
                                         cx,
@@ -653,7 +653,7 @@ impl Shell {
                         )
                         .child(ui::button(
                             "paint-all",
-                            "全キー",
+                            "All keys",
                             Some("paint-bucket"),
                             Btn::Ghost,
                             cx,
@@ -671,7 +671,7 @@ impl Shell {
                         ))
                         .child(ui::button(
                             "paint-clear",
-                            "クリア",
+                            "Clear",
                             Some("eraser"),
                             Btn::Ghost,
                             cx,
@@ -688,14 +688,14 @@ impl Shell {
                             },
                         ));
                     col = col.child(
-                        ui::card_titled("キーごとの色", "brush", Some(tools.into_any_element()))
+                        ui::card_titled("Per-key color", "brush", Some(tools.into_any_element()))
                             .child(
                                 ui::body()
                                     .pt(px(10.))
                                     .pb(px(14.))
                                     .gap(px(10.))
                                     .child(view)
-                                    .child(ui::faint("クリックで塗る · Shift+クリックで消す")),
+                                    .child(ui::faint("Click to paint · Shift+click to erase")),
                             ),
                     );
                 }

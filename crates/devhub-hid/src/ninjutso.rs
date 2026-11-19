@@ -199,7 +199,7 @@ impl NinjutsoDriver {
         if check(&d) {
             Ok(())
         } else {
-            Err(HubError::Protocol(format!("{what} が反映されませんでした")))
+            Err(HubError::Protocol(format!("{what} didn't take effect")))
         }
     }
 }
@@ -216,40 +216,40 @@ pub fn build_caps(high_rate: bool, sora_3950: bool) -> Capabilities {
             SettingSpec::choice(
                 "polling_wireless",
                 PERFORMANCE,
-                "ポーリングレート",
+                "Polling rate",
                 opts(&[(1000, "1K"), (2000, "2K"), (4000, "4K"), (8000, "8K")]),
             )
-            .help("8K 受信機でのみ選べます (有線・1K 受信機は 1000Hz 固定)"),
+            .help("Only on the 8K receiver (wired and 1K receiver are fixed at 1000Hz)"),
         );
     }
     settings.extend([
         SettingSpec::choice(
             "system_mode",
             PERFORMANCE,
-            "システムモード",
-            opts(&[(1, "ハイスピード"), (2, "競技")]),
+            "System mode",
+            opts(&[(1, "High-Speed"), (2, "Competitive")]),
         )
-        .help("競技モードは応答を優先し、電池の持ちが短くなります"),
+        .help("Competitive mode prioritizes response; battery life is shorter"),
         SettingSpec::choice(
             "lod",
             SENSOR,
-            "リフトオフ距離",
+            "Lift-off distance",
             if sora_3950 {
-                opts(&[(0, "低"), (1, "中"), (2, "高")])
+                opts(&[(0, "Low"), (1, "Medium"), (2, "High")])
             } else {
-                opts(&[(1, "中"), (2, "高")])
+                opts(&[(1, "Medium"), (2, "High")])
             },
         )
-        .help("持ち上げて反応しなくなる高さ"),
-        SettingSpec::toggle("motion_sync", SENSOR, "モーション同期")
-            .help("ポインタとマウスの動きを同期させ、軌跡を滑らかにします"),
+        .help("Height at which it stops tracking when lifted"),
+        SettingSpec::toggle("motion_sync", SENSOR, "Motion sync")
+            .help("Syncs pointer and mouse movement for smoother tracking"),
         SettingSpec::choice(
             "slam_click",
             CLICK,
             "Slam Click",
-            opts(&[(0, "低"), (1, "中"), (2, "高")]),
+            opts(&[(0, "Low"), (1, "Medium"), (2, "High")]),
         )
-        .help("マウスを置いた衝撃でクリックが誤反応するのを抑える強さ"),
+        .help("How strongly to suppress false clicks from the impact of setting the mouse down"),
     ]);
     Capabilities {
         settings,
@@ -363,7 +363,7 @@ impl DeviceDriver for NinjutsoDriver {
                         as u8;
                     self.write_verified(
                         cmd_frame(10, profile, Some(code)),
-                        "ポーリングレート",
+                        "Polling rate",
                         |d| d[24] == code,
                     )
                 }
@@ -380,7 +380,7 @@ impl DeviceDriver for NinjutsoDriver {
                     let v = value.as_bool() as u8;
                     self.write_verified(
                         cmd_frame(6, profile, Some(v)),
-                        "モーション同期",
+                        "Motion sync",
                         |d| d[23] == v,
                     )
                 }
@@ -388,7 +388,7 @@ impl DeviceDriver for NinjutsoDriver {
                     let v = value.as_choice().clamp(1, 2) as u8;
                     self.write_verified(
                         cmd_frame(23, profile, Some(v)),
-                        "システムモード",
+                        "System mode",
                         |d| d[21] == v,
                     )
                 }
@@ -422,13 +422,13 @@ impl DeviceDriver for NinjutsoDriver {
                             .all(|(i, b)| d[12 + i * 2] == b[0] && d[13 + i * 2] == b[1])
                 })?;
                 let a = (*active).min(n - 1) as u8;
-                self.write_verified(cmd_frame(14, profile, Some(a)), "有効な DPI 段", |d| {
+                self.write_verified(cmd_frame(14, profile, Some(a)), "Active DPI stage", |d| {
                     d[20] == a
                 })
             }
             Change::ActiveStage(a) => {
                 let a = *a as u8;
-                self.write_verified(cmd_frame(14, profile, Some(a)), "有効な DPI 段", |d| {
+                self.write_verified(cmd_frame(14, profile, Some(a)), "Active DPI stage", |d| {
                     d[20] == a
                 })
             }

@@ -291,7 +291,7 @@ impl LamzuDriver {
             i.name = m.name.into();
             i.model = m.model.into();
         } else if transport == Transport::Wireless24G {
-            i.name = format!("{} レシーバー (未対応のマウス)", base.v.brand);
+            i.name = format!("{} receiver (unsupported mouse)", base.v.brand);
         }
     }
 
@@ -424,7 +424,7 @@ impl LamzuDriver {
         };
         let n = c.points.len();
         if n < ac.min_points || n > ac.max_points {
-            return Err(HubError::Invalid("速度連動 DPI の点の数".into()));
+            return Err(HubError::Invalid("Number of AdaDPI points".into()));
         }
         let mut last = None;
         for p in &c.points {
@@ -432,7 +432,7 @@ impl LamzuDriver {
                 || !(0.0..=ac.ratio_max + 1e-3).contains(&p.ratio)
                 || last.is_some_and(|l| p.speed <= l)
             {
-                return Err(HubError::Invalid("速度連動 DPI の点の値".into()));
+                return Err(HubError::Invalid("AdaDPI point values".into()));
             }
             last = Some(p.speed);
         }
@@ -650,7 +650,7 @@ fn encode_button(a: &ButtonAction) -> HubResult<(u8, Vec<u8>)> {
         } => {
             // 公式の連射 (Xクリック) は左クリック固定。他のボタンは実機未検証なので書かない。
             if *button != MouseFn::Left {
-                return Err(HubError::Unsupported("連射は左クリックのみ (公式と同じ)"));
+                return Err(HubError::Unsupported("Rapid fire is left click only (same as official)"));
             }
             let b = 1;
             let [hi, lo] = interval_ms.to_be_bytes();
@@ -950,7 +950,7 @@ impl DeviceDriver for LamzuDriver {
                             _ => false,
                         });
                     if !allowed {
-                        return Err(HubError::Invalid("この接続では選べないポーリングレートです".into()));
+                        return Err(HubError::Invalid("This polling rate isn't available on this connection".into()));
                     }
                     let code = match hz {
                         125 => 8,
@@ -1004,7 +1004,7 @@ impl DeviceDriver for LamzuDriver {
                     if on && self.get(2, 1, 139, prof).ok() != Some(1) {
                         let v = self.vendor();
                         return Err(HubError::Invalid(format!(
-                            "{}は先に{}を ON にしてください",
+                            "Turn on {1} before {0}",
                             v.tracking_label, v.hyper_label
                         )));
                     }
@@ -1092,7 +1092,7 @@ impl DeviceDriver for LamzuDriver {
                     match read() {
                         Some(b) if b == v => Ok(()),
                         Some(_) => Err(HubError::Protocol(
-                            "ガラスモードが反映されませんでした (このファームウェアでは未対応の可能性)".into(),
+                            "Glass mode didn't take effect (this firmware may not support it)".into(),
                         )),
                         None => res,
                     }
@@ -1103,7 +1103,7 @@ impl DeviceDriver for LamzuDriver {
                     // 0 = スリープしない (WLMOUSE は 0xFFFF を書く)。
                     let min = value.as_choice();
                     if !self.vendor().sleep_opts.contains(&min) {
-                        return Err(HubError::Invalid("選べないスリープ時間です".into()));
+                        return Err(HubError::Invalid("Unsupported sleep time".into()));
                     }
                     let secs = if min == 0 { 0xFFFF } else { (min * 60) as u16 };
                     let [hi, lo] = secs.to_be_bytes();
@@ -1216,7 +1216,7 @@ impl DeviceDriver for LamzuDriver {
                 self.run(2, 1, 0, 13, &[prof])?;
                 sleep(Duration::from_millis(500));
                 Ok(ActionOutcome {
-                    message: Some("プロファイルを初期化しました".into()),
+                    message: Some("Profile reset".into()),
                     reload: true,
                 })
             }
@@ -1234,7 +1234,7 @@ impl DeviceDriver for LamzuDriver {
                 }
                 sleep(Duration::from_millis(1500));
                 Ok(ActionOutcome {
-                    message: Some("工場出荷状態に戻しました".into()),
+                    message: Some("Restored factory settings".into()),
                     reload: true,
                 })
             }

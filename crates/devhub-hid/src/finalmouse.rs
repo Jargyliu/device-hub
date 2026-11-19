@@ -255,7 +255,7 @@ pub fn build_caps() -> Capabilities {
             SettingSpec::choice(
                 "polling_wireless",
                 PERFORMANCE,
-                "ポーリングレート",
+                "Polling rate",
                 RATES
                     .iter()
                     .map(|&hz| {
@@ -268,23 +268,23 @@ pub fn build_caps() -> Capabilities {
                     })
                     .collect(),
             )
-            .help("マウスの報告頻度 (Hz)"),
+            .help("How often the mouse reports (Hz)"),
             SettingSpec::choice(
                 "lod",
                 SENSOR,
-                "リフトオフ距離",
+                "Lift-off distance",
                 opts(&[(10, "1mm"), (20, "2mm")]),
             )
-            .help("持ち上げて反応しなくなる高さ"),
-            SettingSpec::toggle("motion_sync", SENSOR, "モーション同期")
-                .help("ポインタとマウスの動きを同期させ、軌跡を滑らかにします"),
+            .help("Height at which it stops tracking when lifted"),
+            SettingSpec::toggle("motion_sync", SENSOR, "Motion sync")
+                .help("Syncs pointer and mouse movement for smoother tracking"),
             SettingSpec::choice(
                 "dongle_led",
                 LIGHTING,
-                "ドングル LED",
-                opts(&[(0, "オフ"), (1, "バッテリー表示"), (2, "白")]),
+                "Dongle LED",
+                opts(&[(0, "Off"), (1, "Battery indicator"), (2, "White")]),
             )
-            .help("受信機のインジケーター"),
+            .help("Receiver indicator"),
         ],
         actions: vec![],
         profiles: None,

@@ -325,7 +325,7 @@ impl DeviceDriver for WalkplayDriver {
                 SettingSpec::choice(
                     "dac_filter",
                     section::AUDIO,
-                    "デジタルフィルター",
+                    "Digital filter",
                     FILTERS
                         .iter()
                         .enumerate()
@@ -335,29 +335,29 @@ impl DeviceDriver for WalkplayDriver {
                 SettingSpec::choice(
                     "dac_work_mode",
                     section::AUDIO,
-                    "DAC ワークモード",
+                    "DAC work mode",
                     vec![ChoiceOpt::new(0, "Class-H"), ChoiceOpt::new(1, "Class-AB")],
                 ),
                 SettingSpec::choice(
                     "output_gain",
                     section::AUDIO,
-                    "出力ゲインモード",
+                    "Output gain mode",
                     vec![ChoiceOpt::new(0, "Low"), ChoiceOpt::new(1, "High")],
                 ),
                 SettingSpec::slider(
                     "channel_balance",
                     section::AUDIO,
-                    "チャンネルバランス",
+                    "Channel balance",
                     -127.,
                     127.,
                     1.,
                     "",
                 )
-                .help("正 = 右に寄せる (左を減衰)。0 で中央。"),
+                .help("Positive = shift right (attenuates left). 0 is center."),
                 SettingSpec::slider(
                     "eq_volume",
                     section::AUDIO,
-                    "EQ ボリューム",
+                    "EQ volume",
                     -16.,
                     6.,
                     1.,
@@ -366,7 +366,7 @@ impl DeviceDriver for WalkplayDriver {
                 SettingSpec::slider(
                     "mic_offset",
                     section::AUDIO,
-                    "マイクオフセット",
+                    "Mic offset",
                     -15.,
                     15.,
                     1.,
@@ -376,10 +376,10 @@ impl DeviceDriver for WalkplayDriver {
             actions: vec![ActionSpec::new(
                 "eq_def",
                 section::AUDIO,
-                "EQ を工場出荷値 (DEF) に戻す",
+                "Reset EQ to factory (DEF)",
             )
-            .help("公式 DEF プリセットの 8 バンドを書き込みます (バンド 9/10 は変わりません)")
-            .confirm("EQ を DEF プリセットに戻します。よろしいですか?")],
+            .help("Writes the 8 bands of the official DEF preset (bands 9/10 unchanged)")
+            .confirm("Reset the EQ to the DEF preset?")],
             profiles: None,
             mouse: None,
             keyboard: None,
@@ -546,18 +546,18 @@ impl DeviceDriver for WalkplayDriver {
                     let raw = (v * 32767. / 15.).round().clamp(-32767., 32767.) as i16 as u16;
                     self.write(0x02, &[2, (raw & 0xFF) as u8, (raw >> 8) as u8])?;
                 }
-                _ => return Err(HubError::Invalid(format!("未知の設定 {id}"))),
+                _ => return Err(HubError::Invalid(format!("Unknown setting {id}"))),
             },
             Change::Peq { band, value } => {
                 if *band >= 10 {
-                    return Err(HubError::Invalid(format!("バンド {band} は範囲外")));
+                    return Err(HubError::Invalid(format!("Band {band} out of range")));
                 }
                 self.write_peq_band(*band, value)?;
                 self.apply_peq()?;
             }
             Change::PeqAll { bands } => {
                 if bands.len() > 10 {
-                    return Err(HubError::Invalid("バンド数が多すぎます".into()));
+                    return Err(HubError::Invalid("Too many bands".into()));
                 }
                 for (i, b) in bands.iter().enumerate() {
                     self.write_peq_band(i, b)?;
@@ -565,7 +565,7 @@ impl DeviceDriver for WalkplayDriver {
                 self.apply_peq()?;
             }
             Change::Profile(_) => return Err(HubError::Unsupported("profiles")),
-            _ => return Err(HubError::Unsupported("この変更")),
+            _ => return Err(HubError::Unsupported("This change")),
         }
         // 全書き込みの後にフラッシュへ保存 (電源を落としても残る)
         self.save()
@@ -592,7 +592,7 @@ impl DeviceDriver for WalkplayDriver {
                 self.apply_peq()?;
                 self.save()?;
                 Ok(ActionOutcome {
-                    message: Some("DEF プリセットを適用しました".into()),
+                    message: Some("Applied DEF preset".into()),
                     reload: true,
                 })
             }

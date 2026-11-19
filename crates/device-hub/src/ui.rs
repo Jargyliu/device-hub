@@ -215,7 +215,7 @@ pub fn battery_pill(pct: u8, charging: bool) -> Div {
         .text_color(if charging { p.ok } else { p.sub })
         .child(icon(ic, 14., c))
         .child(if charging {
-            "充電中".to_string()
+            "Charging".to_string()
         } else {
             format!("{pct}%")
         })

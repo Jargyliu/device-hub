@@ -125,9 +125,9 @@ const LOD_3950: &[(i64, u8)] = &[(7, 3), (10, 1), (20, 2)];
 const BUTTONS_5: &[&str] = &[
     "Left",
     "Right",
-    "ホイールクリック",
-    "サイド (戻る)",
-    "サイド (進む)",
+    "Wheel Click",
+    "Side (Back)",
+    "Side (Forward)",
 ];
 
 pub const ATK_F1V3U: CompxModel = CompxModel {
@@ -173,7 +173,7 @@ pub const SCYROX_V6: CompxModel = CompxModel {
     sleep_mirror: true,
     sleep_opts: &[1, 2, 3, 5, 10, 15, 20, 30],
     atk_hub: false,
-    perf_mode: Some("競技モード"),
+    perf_mode: Some("Competitive mode"),
     factory_reset: true,
     profiles: 0,
     fw_bcd: true,
@@ -196,16 +196,16 @@ pub const PULSAR_X2CL: CompxModel = CompxModel {
     buttons: &[
         "Left",
         "Right",
-        "ホイールクリック",
-        "サイド (戻る)",
-        "サイド (進む)",
-        "DPI ボタン",
+        "Wheel Click",
+        "Side (Back)",
+        "Side (Forward)",
+        "DPI Button",
     ],
     debounce_max: 20.,
     sleep_mirror: true,
     sleep_opts: &[1, 2, 3, 5, 10, 15, 20, 30],
     atk_hub: false,
-    perf_mode: Some("ターボモード"),
+    perf_mode: Some("Turbo mode"),
     // 公式 (Fusion / bbb.pulsar.gg) が cmd9 を送るのを確認できていない。
     factory_reset: false,
     profiles: 4,
@@ -785,60 +785,60 @@ pub fn build_caps(m: &CompxModel, transport: Transport) -> Capabilities {
     let mut settings = vec![SettingSpec::choice(
         "polling_wireless",
         PERFORMANCE,
-        "ポーリングレート",
+        "Polling rate",
         rate_opts,
     )
-    .help("マウスの報告頻度 (Hz)")];
+    .help("How often the mouse reports (Hz)")];
     if let Some(label) = m.perf_mode {
         settings.push(
             SettingSpec::toggle("hyper_mode", PERFORMANCE, label)
-                .help("センサーを最高性能で動かします (電池の持ちは短くなります、@181)"),
+                .help("Runs the sensor at maximum performance (shorter battery life, @181)"),
         );
     }
     settings.extend([
-        SettingSpec::choice("lod", SENSOR, "リフトオフ距離", lod_opts(m))
-            .help("持ち上げて反応しなくなる高さ"),
-        SettingSpec::toggle("motion_sync", SENSOR, "モーション同期")
-            .help("ポインタとマウスの動きを同期させ、軌跡を滑らかにします"),
-        SettingSpec::toggle("angle_snap", SENSOR, "直線補正")
-            .help("移動のブレを直線に補正します"),
-        SettingSpec::toggle("ripple", SENSOR, "リップル制御")
-            .help("高DPI時の細かい揺れを抑えます"),
+        SettingSpec::choice("lod", SENSOR, "Lift-off distance", lod_opts(m))
+            .help("Height at which it stops tracking when lifted"),
+        SettingSpec::toggle("motion_sync", SENSOR, "Motion sync")
+            .help("Syncs pointer and mouse movement for smoother tracking"),
+        SettingSpec::toggle("angle_snap", SENSOR, "Angle snapping")
+            .help("Straightens shaky movement into lines"),
+        SettingSpec::toggle("ripple", SENSOR, "Ripple control")
+            .help("Suppresses fine jitter at high DPI"),
     ]);
     if m.atk_hub {
         settings.push(
-            SettingSpec::slider("wheel_debounce", CLICK, "ホイール遅延", 0., 60., 1., "ms")
-                .help("ホイールの入力遅延 (実機初期値 30)"),
+            SettingSpec::slider("wheel_debounce", CLICK, "Wheel delay", 0., 60., 1., "ms")
+                .help("Wheel input delay (hardware default 30)"),
         );
     }
     settings.push(
-        SettingSpec::slider("debounce", CLICK, "クリックデバウンス", 0., m.debounce_max, 1., "ms")
-            .help("ボタンのチャタリング防止 (@169 stabilizationTime)"),
+        SettingSpec::slider("debounce", CLICK, "Click debounce", 0., m.debounce_max, 1., "ms")
+            .help("Button chatter prevention (@169 stabilizationTime)"),
     );
     settings.push(
         SettingSpec::choice(
             "sleep_min",
             POWER,
-            "スリープまでの時間",
+            "Sleep timeout",
             m.sleep_opts
                 .iter()
-                .map(|&v| ChoiceOpt::new(v, format!("{v} 分")))
+                .map(|&v| ChoiceOpt::new(v, format!("{v} min")))
                 .collect(),
         )
-        .help("無操作でスリープするまでの時間 (10秒単位で保持)"),
+        .help("Time until sleep without activity (stored in 10-second units)"),
     );
     if m.atk_hub {
         settings.extend([
-            SettingSpec::toggle("move_close_led", LIGHTING, "移動中 LED 消灯")
-                .help("操作している間は LED を消します (@179)"),
-            SettingSpec::slider("bhop", CLICK, "ホイール誤操作防止", 0., 25., 1., "")
-                .help("スクロール誤検知の抑止時間 (0=無効、公式は time/10 で保持)"),
+            SettingSpec::toggle("move_close_led", LIGHTING, "LED off while moving")
+                .help("Turns the LED off while in use (@179)"),
+            SettingSpec::slider("bhop", CLICK, "Wheel misfire guard", 0., 25., 1., "")
+                .help("Scroll misdetection suppression time (0 = off, official app stores time/10)"),
         ]);
     }
     let actions = if m.factory_reset {
-        vec![ActionSpec::new("factory_reset", SYSTEM, "工場出荷状態に戻す")
-            .help("全設定を初期値に戻します (cmd9)")
-            .danger("このデバイスの全設定が消去されます")]
+        vec![ActionSpec::new("factory_reset", SYSTEM, "Factory reset")
+            .help("Restores all settings to defaults (cmd9)")
+            .danger("All settings on this device will be erased")]
     } else {
         vec![]
     };
@@ -1065,7 +1065,7 @@ impl DeviceDriver for AtkDriver {
                     let hz = value.as_choice();
                     if !self.caps_rates().contains(&hz) {
                         return Err(HubError::Invalid(
-                            "この接続では選べないポーリングレートです".into(),
+                            "This polling rate isn't available on this connection".into(),
                         ));
                     }
                     let code = rate_code(hz).ok_or(HubError::Invalid("polling rate".into()))?;
@@ -1161,7 +1161,7 @@ impl DeviceDriver for AtkDriver {
             "factory_reset" if self.model.factory_reset => {
                 self.cmd_raw(9, 0, &[])?;
                 Ok(ActionOutcome {
-                    message: Some("工場出荷状態に戻しました".into()),
+                    message: Some("Restored factory settings".into()),
                     reload: true,
                 })
             }

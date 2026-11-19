@@ -27,10 +27,10 @@ impl Theme {
     pub const ALL: [Theme; 4] = [Theme::Glass, Theme::Light, Theme::Clear, Theme::Neon];
     pub fn label(self) -> &'static str {
         match self {
-            Theme::Glass => "グラス",
-            Theme::Light => "ライト",
-            Theme::Clear => "背景なし",
-            Theme::Neon => "ネオン",
+            Theme::Glass => "Glass",
+            Theme::Light => "Light",
+            Theme::Clear => "No background",
+            Theme::Neon => "Neon",
         }
     }
 }
@@ -51,9 +51,9 @@ impl MouseStyle {
     pub const ALL: [MouseStyle; 3] = [MouseStyle::Both, MouseStyle::Shape, MouseStyle::Bars];
     pub fn label(self) -> &'static str {
         match self {
-            MouseStyle::Both => "形 + バー",
-            MouseStyle::Shape => "形だけ",
-            MouseStyle::Bars => "バーだけ",
+            MouseStyle::Both => "Shape + bar",
+            MouseStyle::Shape => "Shape only",
+            MouseStyle::Bars => "Bar only",
         }
     }
 }
@@ -74,9 +74,9 @@ impl FillMode {
     pub const ALL: [FillMode; 3] = [FillMode::Bottom, FillMode::Top, FillMode::Fade];
     pub fn label(self) -> &'static str {
         match self {
-            FillMode::Bottom => "下から",
-            FillMode::Top => "上から",
-            FillMode::Fade => "フェード",
+            FillMode::Bottom => "From bottom",
+            FillMode::Top => "From top",
+            FillMode::Fade => "Fade",
         }
     }
 }
@@ -97,9 +97,9 @@ impl Arrange {
     pub const ALL: [Arrange; 3] = [Arrange::Side, Arrange::Stack, Arrange::Swap];
     pub fn label(self) -> &'static str {
         match self {
-            Arrange::Side => "横並び",
-            Arrange::Stack => "縦積み",
-            Arrange::Swap => "左右入替",
+            Arrange::Side => "Side by side",
+            Arrange::Stack => "Stacked",
+            Arrange::Swap => "Swap left/right",
         }
     }
 }

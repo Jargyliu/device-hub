@@ -126,7 +126,7 @@ const FAIL_DROP: u32 = 8;
 
 fn loop_body(shared: &Arc<Mutex<Live>>, stop: &Arc<AtomicBool>) {
     let Ok(hub) = devhub_hid::connect() else {
-        shared.lock().unwrap().status = "HID を開けません".into();
+        shared.lock().unwrap().status = "Cannot open HID".into();
         return;
     };
     let mut targets = find_targets(hub.as_ref(), true, true);
@@ -151,7 +151,7 @@ fn loop_body(shared: &Arc<Mutex<Live>>, stop: &Arc<AtomicBool>) {
                 let mut l = shared.lock().unwrap();
                 l.kb = None;
                 l.mouse = None;
-                l.status = "対応デバイスを探しています…".into();
+                l.status = "Looking for supported devices…".into();
                 l.seq += 1;
             }
             std::thread::sleep(Duration::from_millis(50));
@@ -176,7 +176,7 @@ fn loop_body(shared: &Arc<Mutex<Live>>, stop: &Arc<AtomicBool>) {
                 Err(_) => {
                     fails.0 += 1;
                     drop_side.0 = fails.0 >= FAIL_DROP;
-                    next.status = format!("{name} から応答がありません");
+                    next.status = format!("No response from {name}");
                 }
             }
         }
@@ -194,7 +194,7 @@ fn loop_body(shared: &Arc<Mutex<Live>>, stop: &Arc<AtomicBool>) {
                 Err(_) => {
                     fails.1 += 1;
                     drop_side.1 = fails.1 >= FAIL_DROP;
-                    next.status = format!("{name} から応答がありません");
+                    next.status = format!("No response from {name}");
                 }
             }
         }
@@ -227,7 +227,7 @@ pub struct Poller {
 impl Poller {
     pub fn start() -> Self {
         let shared = Arc::new(Mutex::new(Live {
-            status: "起動中…".into(),
+            status: "Starting…".into(),
             ..Live::default()
         }));
         let stop = Arc::new(AtomicBool::new(false));
@@ -261,7 +261,7 @@ struct Pool {
 impl Pool {
     fn spawn() -> Arc<Self> {
         let live = Arc::new(Mutex::new(Live {
-            status: "起動中…".into(),
+            status: "Starting…".into(),
             ..Live::default()
         }));
         let stop = Arc::new(AtomicBool::new(false));

@@ -28,13 +28,13 @@ pub struct AdvDraft {
 
 pub fn kind_meta(k: AdvancedKind) -> (&'static str, &'static str, &'static str) {
     match k {
-        AdvancedKind::Dks => ("DKS", "ダイナミックキーストローク — 押し始め・底打ち・戻り始め・完全リリースの 4 段階で最大 4 キーを出す", "layers"),
-        AdvancedKind::Mpt => ("MPT", "多段トリガー — 押す深さ 3 段階で別々のキーを出す", "chart-column-increasing"),
-        AdvancedKind::Mt => ("MT", "マルチタップ — 短く押すとタップ用、長押しでホールド用のキー", "timer"),
-        AdvancedKind::Tgl => ("TGL", "トグル — 1 回押すと押しっぱなし、もう 1 回で解除", "toggle-right"),
-        AdvancedKind::End => ("END", "リリーストリガー — 戻りの指定位置でキーを出す (osu! 等)", "corner-left-up"),
-        AdvancedKind::Socd => ("SOCD", "反対方向キーの同時押しを解決 (後入力優先など)", "arrow-left-right"),
-        AdvancedKind::Rs => ("RS", "ラピッドスナップ — 2 キーのうち深く押された方だけを出す (カウンターストレイフ)", "zap"),
+        AdvancedKind::Dks => ("DKS", "Dynamic Keystroke — up to 4 keys across 4 stages: press start, bottom-out, release start, full release", "layers"),
+        AdvancedKind::Mpt => ("MPT", "Multi-stage Trigger — a different key at each of 3 press depths", "chart-column-increasing"),
+        AdvancedKind::Mt => ("MT", "Multi-tap — one key on a short tap, another when held", "timer"),
+        AdvancedKind::Tgl => ("TGL", "Toggle — press once to hold down, press again to release", "toggle-right"),
+        AdvancedKind::End => ("END", "Release Trigger — sends a key at a set point on the way up (osu! etc.)", "corner-left-up"),
+        AdvancedKind::Socd => ("SOCD", "Resolves simultaneous opposite-direction keys (last input wins, etc.)", "arrow-left-right"),
+        AdvancedKind::Rs => ("RS", "Rapid Snap — of two keys, only the deeper-pressed one is sent (counter-strafe)", "zap"),
     }
 }
 
@@ -112,7 +112,7 @@ impl Shell {
         // ---- 一覧
         let mut list = ui::body().pt(px(4.));
         if ks.advanced.is_empty() {
-            list = list.child(ui::faint("まだ設定されていません").py(px(10.)));
+            list = list.child(ui::faint("Nothing configured yet").py(px(10.)));
         }
         for (i, a) in ks.advanced.iter().enumerate() {
             let (name, _, icon) = kind_meta(a.binding.kind());
@@ -193,7 +193,7 @@ impl Shell {
                     )),
             );
         }
-        let list_card = ui::card_titled("設定済みの高度キー", "sparkles", None).child(list);
+        let list_card = ui::card_titled("Configured advanced keys", "sparkles", None).child(list);
 
         // ---- 種類の選択
         let mut kinds = div().flex().flex_wrap().gap(px(10.));
@@ -254,7 +254,7 @@ impl Shell {
                     })),
             );
         }
-        let new_card = ui::card_titled("新しく設定する", "plus", None)
+        let new_card = ui::card_titled("Add new", "plus", None)
             .child(ui::body().pt(px(8.)).pb(px(16.)).child(kinds));
 
         let mut col = div()
@@ -329,14 +329,14 @@ impl Shell {
                 .unwrap_or_else(|| "?".into())
         };
         let hint = match (d.key, d.pick, needs_other) {
-            (None, _, _) => "設定するキーをクリック".to_string(),
+            (None, _, _) => "Click the key to configure".to_string(),
             (Some(k), PickTarget::Other, true) => {
-                format!("「{}」と対にする相手キーをクリック", key_name(k))
+                format!("Click the key to pair with \"{}\"", key_name(k))
             }
             (Some(k), _, _) => format!(
-                "ペア: {} ⇄ {}",
+                "Pair: {} ⇄ {}",
                 key_name(k),
-                other.map(key_name).unwrap_or_else(|| "未選択".into())
+                other.map(key_name).unwrap_or_else(|| "Not selected".into())
             ),
         };
 
@@ -353,7 +353,7 @@ impl Shell {
             .gap(px(8.))
             .child(ui::button(
                 "adv-cancel",
-                "閉じる",
+                "Close",
                 None,
                 Btn::Ghost,
                 cx,
@@ -365,7 +365,7 @@ impl Shell {
             .when(can_save, |f| {
                 f.child(ui::button(
                     "adv-save",
-                    "保存",
+                    "Save",
                     Some("check"),
                     Btn::Primary,
                     cx,
@@ -375,7 +375,7 @@ impl Shell {
                             // MPT の深さは単調増加でなければならない。
                             if let Advanced::Mpt { depths, .. } = &b {
                                 if !(depths[0] < depths[1] && depths[1] < depths[2]) {
-                                    this.toast("3 つの深さは浅い順に大きくしてください", true, cx);
+                                    this.toast("Make the 3 depths increase from shallowest to deepest", true, cx);
                                     return;
                                 }
                             }
@@ -388,13 +388,13 @@ impl Shell {
                                 cx,
                             );
                             this.adv = AdvDraft::default();
-                            this.toast("高度キーを保存しました", false, cx);
+                            this.toast("Advanced key saved", false, cx);
                         }
                     },
                 ))
             });
         ui::card_titled(
-            &format!("{name} を設定"),
+            &format!("Configure {name}"),
             icon,
             Some(ui::chip(hint, p.accent).into_any_element()),
         )
@@ -453,13 +453,13 @@ impl Shell {
         let mut body = div().flex().flex_col();
         match b {
             Advanced::Dks { rows, bottom } => {
-                let phases = ["押し始め", "底打ち", "戻り始め", "完全リリース"];
+                let phases = ["Press start", "Bottom-out", "Release start", "Full release"];
                 let mut head = div()
                     .flex()
                     .items_center()
                     .gap(px(8.))
                     .pb(px(6.))
-                    .child(div().w(px(200.)).child(ui::faint("キー")));
+                    .child(div().w(px(200.)).child(ui::faint("Key")));
                 for ph in phases {
                     head = head.child(
                         div()
@@ -494,8 +494,8 @@ impl Shell {
                     for (pi, ph) in r.phases.iter().enumerate() {
                         let (label, c) = match ph {
                             DksPhase::Off => ("—", p.faint),
-                            DksPhase::Tap => ("タップ", p.accent),
-                            DksPhase::Hold => ("ホールド", p.ok),
+                            DksPhase::Tap => ("Tap", p.accent),
+                            DksPhase::Hold => ("Hold", p.ok),
                         };
                         line = line.child(
                             div()
@@ -547,7 +547,7 @@ impl Shell {
                 if rows.len() < 4 {
                     body = body.child(div().pt(px(4.)).child(ui::button(
                         "dks-add",
-                        "キーを追加",
+                        "Add key",
                         Some("plus"),
                         Btn::Ghost,
                         cx,
@@ -563,7 +563,7 @@ impl Shell {
                     )));
                 }
                 body = body.child(ui::row(
-                    "底打ちの深さ",
+                    "Bottom-out depth",
                     None,
                     ui::slider_value(
                         "dks-bottom",
@@ -588,7 +588,7 @@ impl Shell {
                 for i in 0..3 {
                     body = body.child(
                         ui::row(
-                            &format!("{} 段目", i + 1),
+                            &format!("Stage {}", i + 1),
                             None,
                             div()
                                 .flex()
@@ -632,7 +632,7 @@ impl Shell {
             Advanced::Mt { tap, hold, hold_ms } => {
                 body = body
                     .child(ui::row_first(
-                        "タップで出すキー",
+                        "Key on tap",
                         None,
                         self.code_select("mt-tap", kc, tap, cx, |this, c| {
                             if let Some(Advanced::Mt { tap, .. }) = this.adv.binding.as_mut() {
@@ -641,7 +641,7 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "長押しで出すキー",
+                        "Key on hold",
                         None,
                         self.code_select("mt-hold", kc, hold, cx, |this, c| {
                             if let Some(Advanced::Mt { hold, .. }) = this.adv.binding.as_mut() {
@@ -650,7 +650,7 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "長押しと判定する時間",
+                        "Hold threshold",
                         None,
                         ui::slider_value(
                             "mt-ms",
@@ -674,7 +674,7 @@ impl Shell {
             Advanced::Tgl { code, delay_ms } => {
                 body = body
                     .child(ui::row_first(
-                        "トグルするキー",
+                        "Key to toggle",
                         None,
                         self.code_select("tgl-code", kc, code, cx, |this, c| {
                             if let Some(Advanced::Tgl { code, .. }) = this.adv.binding.as_mut() {
@@ -683,8 +683,8 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "押している時間",
-                        Some("トグル出力の押下時間"),
+                        "Press duration",
+                        Some("How long the toggled output stays pressed"),
                         ui::slider_value(
                             "tgl-ms",
                             delay_ms as f32,
@@ -711,7 +711,7 @@ impl Shell {
             } => {
                 body = body
                     .child(ui::row_first(
-                        "押した時に出るキー",
+                        "Key on press",
                         None,
                         self.code_select("end-code", kc, code, cx, |this, c| {
                             if let Some(Advanced::End { code, .. }) = this.adv.binding.as_mut() {
@@ -720,7 +720,7 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "離した時に出るキー",
+                        "Key on release",
                         None,
                         self.code_select("end-code2", kc, code_release, cx, |this, c| {
                             if let Some(Advanced::End { code_release, .. }) =
@@ -731,7 +731,7 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "押している時間",
+                        "Press duration",
                         None,
                         ui::slider_value(
                             "end-ms",
@@ -768,11 +768,11 @@ impl Shell {
                 let la = name(self.adv.key);
                 let lb = name(partner(&b));
                 let modes = [
-                    "後入力優先".to_string(),
-                    "先入力優先".to_string(),
-                    format!("{la} 優先"),
-                    format!("{lb} 優先"),
-                    "ニュートラル".to_string(),
+                    "Last input wins".to_string(),
+                    "First input wins".to_string(),
+                    format!("{la} wins"),
+                    format!("{lb} wins"),
+                    "Neutral".to_string(),
                 ];
                 let cur = match mode {
                     SocdMode::Last => 0,
@@ -783,8 +783,8 @@ impl Shell {
                 };
                 body = body
                     .child(ui::row_first(
-                        &format!("「{la}」が送るキー"),
-                        Some(&format!("{la} を押したときに出るキー")),
+                        &format!("Key sent by \"{la}\""),
+                        Some(&format!("Key sent when {la} is pressed")),
                         self.code_select("socd-a", kc, code_a, cx, |this, c| {
                             if let Some(Advanced::Socd { code_a, .. }) = this.adv.binding.as_mut() {
                                 *code_a = c;
@@ -792,8 +792,8 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        &format!("「{lb}」が送るキー"),
-                        Some(&format!("{lb} を押したときに出るキー")),
+                        &format!("Key sent by \"{lb}\""),
+                        Some(&format!("Key sent when {lb} is pressed")),
                         self.code_select("socd-b", kc, code_b, cx, |this, c| {
                             if let Some(Advanced::Socd { code_b, .. }) = this.adv.binding.as_mut() {
                                 *code_b = c;
@@ -801,7 +801,7 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "同時押しのとき",
+                        "When both are pressed",
                         None,
                         ui::segmented(
                             "socd-mode",
@@ -824,8 +824,8 @@ impl Shell {
                         .w(px(460.)),
                     ))
                     .child(ui::row(
-                        "反転判定の遅延",
-                        Some("同時押し判定が切り替わるまでの時間"),
+                        "Reversal delay",
+                        Some("Time before the simultaneous-press decision switches"),
                         ui::slider_value(
                             "socd-ms",
                             delay_ms as f32,
@@ -860,8 +860,8 @@ impl Shell {
                 let lb = name(partner(&b));
                 body = body
                     .child(ui::row_first(
-                        &format!("「{la}」が送るキー"),
-                        Some(&format!("{la} を押したときに出るキー")),
+                        &format!("Key sent by \"{la}\""),
+                        Some(&format!("Key sent when {la} is pressed")),
                         self.code_select("rs-a", kc, code_a, cx, |this, c| {
                             if let Some(Advanced::Rs { code_a, .. }) = this.adv.binding.as_mut() {
                                 *code_a = c;
@@ -869,8 +869,8 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        &format!("「{lb}」が送るキー"),
-                        Some(&format!("{lb} を押したときに出るキー")),
+                        &format!("Key sent by \"{lb}\""),
+                        Some(&format!("Key sent when {lb} is pressed")),
                         self.code_select("rs-b", kc, code_b, cx, |this, c| {
                             if let Some(Advanced::Rs { code_b, .. }) = this.adv.binding.as_mut() {
                                 *code_b = c;
@@ -878,8 +878,8 @@ impl Shell {
                         }),
                     ))
                     .child(ui::row(
-                        "判定の遅延",
-                        Some("深い方への切替が確定するまでの時間"),
+                        "Decision delay",
+                        Some("Time before switching to the deeper key is confirmed"),
                         ui::slider_value(
                             "rs-ms",
                             delay_ms as f32,
@@ -937,7 +937,7 @@ fn summary(kc: &KeyboardCaps, b: &Advanced) -> String {
             depths[2]
         ),
         Advanced::Mt { tap, hold, hold_ms } => {
-            format!("タップ {} / 長押し {} ({hold_ms}ms)", n(*tap), n(*hold))
+            format!("Tap {} / Hold {} ({hold_ms}ms)", n(*tap), n(*hold))
         }
         Advanced::Tgl { code, .. } => n(*code),
         Advanced::End {

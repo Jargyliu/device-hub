@@ -990,16 +990,16 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
     let mut settings = vec![SettingSpec::choice(
         "polling_wired",
         PERFORMANCE,
-        "ポーリングレート (有線)",
+        "Polling rate (wired)",
         poll_opts,
     )
-    .help("マウスがPCへ位置を報告する頻度 (Hz)")];
+    .help("How often the mouse reports its position to the PC (Hz)")];
     if wireless {
         settings.push(
             SettingSpec::choice(
                 "polling_wireless",
                 PERFORMANCE,
-                "ポーリングレート (無線)",
+                "Polling rate (wireless)",
                 opts(&[
                     (125, "125"),
                     (250, "250"),
@@ -1010,37 +1010,37 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
                     (8000, "8K"),
                 ]),
             )
-            .help("使用中のレシーバー (1K / 4K / 8K) で選べる値が変わります"),
+            .help("Available values depend on the receiver in use (1K / 4K / 8K)"),
         );
     }
     settings.extend([
-        SettingSpec::toggle("competitive", PERFORMANCE, "競技モード")
-            .help("センサーを常時最高性能で動かします (Tracking Mode)"),
-        SettingSpec::choice("lod", SENSOR, "リフトオフ距離", opts(m.lod_choices))
-            .help("マウスを持ち上げたとき反応しなくなる高さ"),
-        SettingSpec::toggle("motion_sync", SENSOR, "モーション同期")
-            .help("ポインタとマウスの動きを同期させ、軌跡を滑らかにします"),
-        SettingSpec::toggle("angle_snap", SENSOR, "直線補正").help("移動のブレを直線に補正します"),
-        SettingSpec::toggle("ripple", SENSOR, "リップル制御").help("高DPI時の細かい揺れを抑えます"),
-        SettingSpec::slider("sensor_angle", SENSOR, "センサー角度", -30., 30., 1., "°")
-            .help("持ち方に合わせて座標軸を回転させます"),
-        SettingSpec::toggle("dpi_xy", SENSOR, "DPI X/Y 個別設定")
-            .help("横方向と縦方向で別々のDPIにします"),
+        SettingSpec::toggle("competitive", PERFORMANCE, "Competitive mode")
+            .help("Keeps the sensor at maximum performance at all times (Tracking Mode)"),
+        SettingSpec::choice("lod", SENSOR, "Lift-off distance", opts(m.lod_choices))
+            .help("Height at which the mouse stops tracking when lifted"),
+        SettingSpec::toggle("motion_sync", SENSOR, "Motion sync")
+            .help("Syncs pointer and mouse movement for smoother tracking"),
+        SettingSpec::toggle("angle_snap", SENSOR, "Angle snapping").help("Straightens shaky movement into lines"),
+        SettingSpec::toggle("ripple", SENSOR, "Ripple control").help("Suppresses fine jitter at high DPI"),
+        SettingSpec::slider("sensor_angle", SENSOR, "Sensor angle", -30., 30., 1., "°")
+            .help("Rotates the axes to match your grip"),
+        SettingSpec::toggle("dpi_xy", SENSOR, "Separate DPI X/Y")
+            .help("Uses different DPI horizontally and vertically"),
         SettingSpec::slider(
             "debounce_press",
             CLICK,
-            "クリックデバウンス (押下)",
+            "Click debounce (press)",
             0.,
             50.,
             1.,
             "ms",
         )
-        .help("短くすると反応が速く、長くすると誤クリックを防ぎます")
-        .confirm("0ms にするとダブルクリックが発生する場合があります。続けますか?"),
+        .help("Shorter is more responsive; longer prevents accidental clicks")
+        .confirm("0ms may cause double clicks. Continue?"),
         SettingSpec::slider(
             "debounce_release",
             CLICK,
-            "クリックデバウンス (解放)",
+            "Click debounce (release)",
             0.,
             50.,
             1.,
@@ -1049,7 +1049,7 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
         SettingSpec::slider(
             "wheel_debounce",
             CLICK,
-            "ホイールデバウンス",
+            "Wheel debounce",
             0.,
             245.,
             5.,
@@ -1059,7 +1059,7 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
     if m.spdt {
         settings.extend([
             SettingSpec::toggle("spdt_left", CLICK, "Left SPDT")
-                .help("光学/機械スイッチの SPDT 方式でチャタリングを防ぎます"),
+                .help("Prevents chatter with SPDT detection on optical/mechanical switches"),
             SettingSpec::toggle("spdt_right", CLICK, "Right SPDT"),
         ]);
     }
@@ -1068,13 +1068,13 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
             SettingSpec::slider(
                 "liftoff_debounce",
                 CLICK,
-                "持ち上げデバウンス",
+                "Lift debounce",
                 0.,
                 30.,
                 1.,
                 "ms",
             )
-            .help("持ち上げた瞬間のクリックを無視する時間"),
+            .help("Time to ignore clicks right after lifting"),
         );
     }
     if wireless {
@@ -1082,23 +1082,23 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
             SettingSpec::choice(
                 "sleep_min",
                 POWER,
-                "スリープまでの時間",
+                "Sleep timeout",
                 opts(&[
-                    (1, "1分"),
-                    (2, "2分"),
-                    (3, "3分"),
-                    (5, "5分"),
-                    (10, "10分"),
-                    (15, "15分"),
-                    (30, "30分"),
+                    (1, "1 min"),
+                    (2, "2 min"),
+                    (3, "3 min"),
+                    (5, "5 min"),
+                    (10, "10 min"),
+                    (15, "15 min"),
+                    (30, "30 min"),
                 ]),
             )
-            .help("この時間動かさないとスリープします"),
+            .help("Sleeps after this long without movement"),
         );
     }
     settings.push(
-        SettingSpec::toggle("dpi_indicator", POWER, "DPI インジケーター")
-            .help("DPI 切替時に LED で知らせます"),
+        SettingSpec::toggle("dpi_indicator", POWER, "DPI indicator")
+            .help("Shows DPI changes with the LED"),
     );
 
     Capabilities {
@@ -1117,9 +1117,9 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
             buttons: [
                 "Left",
                 "Right",
-                "ホイールクリック",
-                "サイド (戻る)",
-                "サイド (進む)",
+                "Wheel Click",
+                "Side (Back)",
+                "Side (Forward)",
             ]
             .iter()
             .map(|n| ButtonSlot { name: (*n).into() })
@@ -1143,9 +1143,9 @@ fn build_caps(info: &DeviceInfo, m: &MfModel) -> Capabilities {
                 max_events: 70,
                 max_delay_ms: 0xFF_FFFF,
                 modes: opts(&[
-                    (0, "指定回数実行"),
-                    (1, "離すまで繰り返す"),
-                    (2, "もう一度押すまで繰り返す"),
+                    (0, "Run a set number of times"),
+                    (1, "Repeat until released"),
+                    (2, "Repeat until pressed again"),
                 ]),
                 repeat_modes: vec![0],
                 names: false,
@@ -1341,7 +1341,7 @@ impl DeviceDriver for MousefitDriver {
                 .filter(|&s| s > 0 && s <= 4096)
                 .and_then(|s| self.macro_read(slot + 1, s).ok())
                 .map(|data| MacroDef {
-                    name: format!("マクロ {}", slot + 1),
+                    name: format!("Macro {}", slot + 1),
                     events: decode_macro(&data),
                     mode: 0,
                     repeat: 1,

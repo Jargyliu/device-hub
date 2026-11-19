@@ -66,11 +66,11 @@ fn fmt_freq(f: u16) -> String {
 
 fn filter_name(f: PeqFilter) -> &'static str {
     match f {
-        PeqFilter::LowShelf => "ローシェルフ",
-        PeqFilter::Peak => "ピーキング",
-        PeqFilter::HighShelf => "ハイシェルフ",
-        PeqFilter::LowPass => "ローパス",
-        PeqFilter::HighPass => "ハイパス",
+        PeqFilter::LowShelf => "Low Shelf",
+        PeqFilter::Peak => "Peaking",
+        PeqFilter::HighShelf => "High Shelf",
+        PeqFilter::LowPass => "Low Pass",
+        PeqFilter::HighPass => "High Pass",
     }
 }
 
@@ -154,14 +154,14 @@ fn builtin_presets() -> Vec<PresetDef> {
     use PeqFilter::*;
     vec![
         (
-            "フラット",
-            "全バンド 0dB (既定の周波数)",
+            "Flat",
+            "All bands 0dB (default frequencies)",
             DEFAULT_FREQS.iter().map(|&f| (Peak, f, 0.75, 0.)).collect(),
             0.,
         ),
         (
-            "DEF (公式)",
-            "公式アプリの DEF と同じ 8 バンド",
+            "DEF (official)",
+            "Same 8 bands as the official app's DEF",
             [50, 200, 500, 1000, 2500, 5000, 10000, 15000]
                 .iter()
                 .map(|&f| (Peak, f, 0.75, 0.))
@@ -169,14 +169,14 @@ fn builtin_presets() -> Vec<PresetDef> {
             0.,
         ),
         (
-            "低音ブースト",
-            "100Hz 以下を持ち上げる",
+            "Bass Boost",
+            "Lifts below 100Hz",
             vec![(LowShelf, 105, 0.7, 6.), (Peak, 300, 1.0, -1.)],
             -6.,
         ),
         (
-            "V 字 (ドンシャリ)",
-            "低域と高域を上げ、中域を少し下げる",
+            "V-shape",
+            "Raises lows and highs, slightly lowers mids",
             vec![
                 (LowShelf, 100, 0.7, 4.),
                 (Peak, 1000, 0.8, -2.5),
@@ -185,8 +185,8 @@ fn builtin_presets() -> Vec<PresetDef> {
             -5.,
         ),
         (
-            "ボーカル",
-            "声の帯域を前に出す",
+            "Vocal",
+            "Brings the voice range forward",
             vec![
                 (Peak, 200, 1.0, -2.),
                 (Peak, 1500, 1.0, 2.),
@@ -196,8 +196,8 @@ fn builtin_presets() -> Vec<PresetDef> {
             -3.,
         ),
         (
-            "FPS 足音",
-            "爆発音などの低域を抑え、足音の 2〜5kHz を強調",
+            "FPS Footsteps",
+            "Tames low-end explosions and emphasizes footsteps at 2–5kHz",
             vec![
                 (LowShelf, 120, 0.7, -5.),
                 (Peak, 400, 1.0, -2.),
@@ -208,8 +208,8 @@ fn builtin_presets() -> Vec<PresetDef> {
             -4.,
         ),
         (
-            "ハーマン風",
-            "IEM 向けハーマンターゲットに近い傾き",
+            "Harman-ish",
+            "Tilt close to the Harman target for IEMs",
             vec![
                 (LowShelf, 105, 0.7, 4.5),
                 (Peak, 3000, 1.4, 1.5),
@@ -218,8 +218,8 @@ fn builtin_presets() -> Vec<PresetDef> {
             -5.,
         ),
         (
-            "高域を抑える",
-            "刺さる高音を和らげる",
+            "Tame Treble",
+            "Softens harsh highs",
             vec![(HighShelf, 6000, 0.7, -3.), (Peak, 8000, 2.0, -2.)],
             0.,
         ),
@@ -404,7 +404,7 @@ impl Shell {
             body = body.child(p);
         }
         ui::card_titled(
-            "パラメトリック EQ",
+            "Parametric EQ",
             "audio-lines",
             Some(trailing.into_any_element()),
         )
@@ -441,7 +441,7 @@ impl Shell {
         let cur_label = match (cur_user, cur_builtin) {
             (Some(i), _) => users[i].name.clone(),
             (None, Some(i)) => builtins[i].0.clone(),
-            _ => "カスタム".to_string(),
+            _ => "Custom".to_string(),
         };
         let mut items: Vec<PopItem> = builtins
             .iter()
@@ -453,7 +453,7 @@ impl Shell {
             .collect();
         for (i, u) in users.iter().enumerate() {
             items.push(PopItem {
-                sub: Some("保存済み".into()),
+                sub: Some("Saved".into()),
                 icon: Some("bookmark"),
                 ..PopItem::new(u.name.clone(), cur_user == Some(i))
             });
@@ -495,7 +495,7 @@ impl Shell {
                 move |this, w, cx| {
                     let cur = cur.clone();
                     this.modal = Some(crate::app::Modal::Text {
-                        title: "EQ プリセットの名前".into(),
+                        title: "EQ preset name".into(),
                         on_ok: Rc::new(move |this, v, _, cx| {
                             let name = v.trim().to_string();
                             if name.is_empty() {
@@ -515,12 +515,12 @@ impl Shell {
                                 this.prefs.eq_presets.push(p);
                             }
                             this.prefs.save();
-                            this.toast(format!("「{name}」を保存しました"), false, cx);
+                            this.toast(format!("Saved \"{name}\""), false, cx);
                             cx.notify();
                         }),
                     });
                     this.input("modal", "", "", w, cx);
-                    this.set_input("modal", "マイ EQ", w, cx);
+                    this.set_input("modal", "My EQ", w, cx);
                     cx.notify();
                 },
             ));
@@ -536,9 +536,9 @@ impl Shell {
                     let name = name.clone();
                     let n2 = name.clone();
                     this.confirm(
-                        "プリセットを削除",
-                        &format!("「{name}」を削除しますか? (デバイスの EQ は変わりません)"),
-                        "削除",
+                        "Delete preset",
+                        &format!("Delete \"{name}\"? (The device EQ won't change)"),
+                        "Delete",
                         true,
                         Rc::new(move |this, _, cx| {
                             this.prefs.eq_presets.retain(|e| e.name != n2);
@@ -553,7 +553,7 @@ impl Shell {
         // AutoEQ 貼り付け
         bar = bar.child(ui::button(
             "peq-paste",
-            "AutoEQ 貼り付け",
+            "Paste AutoEQ",
             Some("clipboard-paste"),
             Btn::Glass,
             cx,
@@ -568,7 +568,7 @@ impl Shell {
                 cx,
                 move |this, _, cx| {
                     cx.write_to_clipboard(ClipboardItem::new_string(text.clone()));
-                    this.toast("EQ を Equalizer APO 形式でコピーしました", false, cx);
+                    this.toast("Copied EQ in Equalizer APO format", false, cx);
                 },
             ));
         }
@@ -578,7 +578,7 @@ impl Shell {
     /// クリップボードの AutoEQ / Equalizer APO テキストを当てる。
     fn peq_paste(&mut self, cx: &mut Context<Self>) {
         let Some(text) = cx.read_from_clipboard().and_then(|c| c.text()) else {
-            self.toast("クリップボードにテキストがありません", true, cx);
+            self.toast("No text on the clipboard", true, cx);
             return;
         };
         let Some(pc) = self
@@ -591,7 +591,7 @@ impl Shell {
         let (preamp, list, skipped) = parse_apo(&text);
         if list.is_empty() {
             self.toast(
-                "AutoEQ (ParametricEQ.txt) 形式の行が見つかりません",
+                "No AutoEQ (ParametricEQ.txt) lines found",
                 true,
                 cx,
             );
@@ -603,12 +603,12 @@ impl Shell {
         // プリアンプが無いテキストは、クリップしない値を自動で付ける。
         let pre = preamp.or_else(|| Some(-(peak_db(&bands).max(0.)).ceil() as f32));
         self.apply_eq(bands, pre, cx);
-        let mut msg = format!("{} バンドを読み込みました", list.len().min(n));
+        let mut msg = format!("Loaded {} bands", list.len().min(n));
         if over > 0 {
-            msg.push_str(&format!(" (バンド数を超えた {over} 個は無視)"));
+            msg.push_str(&format!(" ({over} beyond the band count ignored)"));
         }
         if skipped > 0 {
-            msg.push_str(&format!(" · 未対応の行 {skipped}"));
+            msg.push_str(&format!(" · {skipped} unsupported lines"));
         }
         self.toast(msg, over > 0, cx);
     }
@@ -964,7 +964,7 @@ impl Shell {
                     .pt(px(2.))
                     .text_size(px(11.))
                     .text_color(p.faint)
-                    .child("ハンドルをドラッグで周波数とゲイン · ホイールで Q (帯域幅)"),
+                    .child("Drag handles for frequency and gain · scroll for Q (bandwidth)"),
             )
     }
 
@@ -995,9 +995,9 @@ impl Shell {
             Rc::new(|this, nv, cx| this.set_preamp(nv, cx)),
         );
         let status = if headroom > 0.05 {
-            ui::chip(format!("クリップの可能性 +{headroom:.1}dB"), p.warn)
+            ui::chip(format!("Possible clipping +{headroom:.1}dB"), p.warn)
         } else {
-            ui::chip(format!("余裕 {:.1}dB", -headroom), p.ok)
+            ui::chip(format!("Headroom {:.1}dB", -headroom), p.ok)
         };
         let mut right = div()
             .flex()
@@ -1023,9 +1023,9 @@ impl Shell {
             right = right.child(ui::button(
                 "peq-auto-pre",
                 &if auto.abs() < 0.5 {
-                    "自動 (0dB)".to_string()
+                    "Auto (0dB)".to_string()
                 } else {
-                    format!("自動 ({auto:+.0}dB)")
+                    format!("Auto ({auto:+.0}dB)")
                 },
                 Some("wand-sparkles"),
                 Btn::Glass,
@@ -1034,8 +1034,8 @@ impl Shell {
             ));
         }
         Some(ui::row_first(
-            "プリアンプ (EQ ボリューム)",
-            Some("ブーストした分だけ下げると音割れしません"),
+            "Preamp (EQ volume)",
+            Some("Lower it by the amount you boosted to avoid clipping"),
             right,
         ))
     }
@@ -1136,7 +1136,7 @@ impl Shell {
         let sel = self.peq_sel;
         let n = bands.len().max(1);
         let Some(band) = bands.get(sel).copied() else {
-            return div().child(ui::faint("バンドを読み取れません"));
+            return div().child(ui::faint("Cannot read bands"));
         };
         let send = Rc::new(
             move |this: &mut Shell, nb: PeqBand, cx: &mut Context<Shell>| {
@@ -1184,7 +1184,7 @@ impl Shell {
                         div()
                             .text_size(px(14.))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child(format!("バンド {}", sel + 1)),
+                            .child(format!("Band {}", sel + 1)),
                     )
                     .child(ui::faint(filter_name(band.filter))),
             )
@@ -1367,21 +1367,21 @@ impl Shell {
             },
         );
         let q_hint = if band.filter == PeqFilter::LowShelf {
-            "この機種のローシェルフは Q を使いません"
+            "This model's low shelf doesn't use Q"
         } else {
-            "大きいほど狭い帯域"
+            "Higher is narrower"
         };
         let g_hint = if gainless(band.filter) {
-            Some("ローパス/ハイパスはゲインを使いません")
+            Some("Low/high pass filters don't use gain")
         } else {
             None
         };
         let f_q = field("Q", Some(q_hint), inp_q, sl_q);
-        let f_g = field("ゲイン", g_hint, inp_g, sl_g);
+        let f_g = field("Gain", g_hint, inp_g, sl_g);
         let row = div()
             .flex()
             .gap(px(10.))
-            .child(field("周波数", Some("20Hz〜20kHz"), inp_f, sl_f))
+            .child(field("Frequency", Some("20Hz–20kHz"), inp_f, sl_f))
             .child(if band.filter == PeqFilter::LowShelf {
                 f_q.opacity(0.55)
             } else {

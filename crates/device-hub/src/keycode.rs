@@ -89,7 +89,7 @@ pub fn stroke_label(s: devhub_core::KeyStroke) -> String {
         out.pop();
     }
     if out.is_empty() {
-        "(未設定)".into()
+        "(not set)".into()
     } else {
         out
     }

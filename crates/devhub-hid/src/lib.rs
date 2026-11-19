@@ -219,7 +219,7 @@ impl HubBackend for RealHub {
             // パスが更新された — 古い接続先で開いたハンドルは捨てて取り直す。
         }
         Err(HubError::Io(
-            "デバイスの接続先が変化しています — 再試行してください".into(),
+            "The device's connection changed — please retry".into(),
         ))
     }
 
@@ -294,7 +294,7 @@ impl RealHub {
             DriverKind::Finalmouse => Arc::new(finalmouse::open(dev, info)?),
             DriverKind::Ninjutso => Arc::new(ninjutso::open(dev, info)?),
             DriverKind::Unsupported => {
-                return Err(HubError::NotImplemented("このデバイスのドライバ"))
+                return Err(HubError::NotImplemented("the driver for this device"))
             }
         };
         Ok(drv)

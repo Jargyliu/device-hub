@@ -136,7 +136,7 @@ impl Shell {
             return;
         };
         if p.devices.is_empty() {
-            self.toast("対象デバイスがありません", true, cx);
+            self.toast("No target devices", true, cx);
             return;
         }
         let (mut sent, mut held, mut n) = (0usize, 0usize, 0usize);
@@ -155,11 +155,11 @@ impl Shell {
         }
         let msg = if held > 0 {
             format!(
-                "プロファイル「{}」: {sent}/{n} 件を適用、{held} 件を予約",
+                "Profile \"{}\": applied {sent}/{n}, queued {held}",
                 p.name
             )
         } else {
-            format!("プロファイル「{}」を適用 ({n} 件)", p.name)
+            format!("Applied profile \"{}\" ({n} items)", p.name)
         };
         self.toast(msg, false, cx);
         cx.notify();
@@ -192,17 +192,17 @@ impl Shell {
             }
         }
         if got == 0 {
-            self.toast("対象デバイスを開いて読み込んでから使えます", true, cx);
+            self.toast("Open and load the target device first", true, cx);
             return;
         }
         self.prefs.save();
         let msg = if skipped > 0 {
             format!(
-                "「{}」に現在の設定を記録 ({got} 台・{total} 件・{skipped} 台は未読込で据え置き)",
+                "Recorded current settings to \"{}\" ({got} devices · {total} items · {skipped} not loaded, kept as-is)",
                 prof.name
             )
         } else {
-            format!("「{}」に現在の設定を記録 ({total} 件)", prof.name)
+            format!("Recorded current settings to \"{}\" ({total} items)", prof.name)
         };
         self.toast(msg, false, cx);
         cx.notify();
@@ -226,7 +226,7 @@ impl Shell {
             .map(|p| p.name.clone())
             .collect();
         if allow_none {
-            v.insert(0, "なし".into());
+            v.insert(0, "None".into());
         }
         v
     }
@@ -234,7 +234,7 @@ impl Shell {
     pub fn page_auto(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let p = theme::pal();
         let devs = dev_list(self);
-        let fg_now = procmon::foreground_app().unwrap_or_else(|| "(不明)".into());
+        let fg_now = procmon::foreground_app().unwrap_or_else(|| "(unknown)".into());
         let running = procmon::running_apps();
         let running_set: std::collections::HashSet<String> =
             running.iter().map(|(e, _)| e.clone()).collect();
@@ -244,7 +244,7 @@ impl Shell {
         let mut prof_body = ui::body();
         if self.prefs.profiles.is_empty() {
             prof_body = prof_body.child(ui::faint(
-                "プロファイルはまだありません。下のフォームで作成するか、デバイス画面で「録画」を開始してください。",
+                "No profiles yet. Create one with the form below, or start \"Record\" on a device page.",
             ));
         }
         for (i, prof) in self.prefs.profiles.clone().iter().enumerate() {
@@ -258,17 +258,17 @@ impl Shell {
                         .unwrap_or_else(|| t.device.clone())
                 })
                 .collect::<Vec<_>>()
-                .join("・");
+                .join("·");
             let recording = self.rec_profile == Some(i);
             let mut btns = div().flex().items_center().gap(px(8.));
             if recording {
-                btns = btns.child(ui::chip("録画中", p.warn));
+                btns = btns.child(ui::chip("Recording", p.warn));
             }
             let help_txt = if recording {
-                "録画中: 対象デバイスの画面で設定を変更すると自動で記録されます".to_string()
+                "Recording: changes you make on the target device's page are saved automatically".to_string()
             } else {
                 format!(
-                    "{} 件の変更",
+                    "{} changes",
                     prof.devices.iter().map(|t| t.changes.len()).sum::<usize>()
                 )
             };
@@ -277,7 +277,7 @@ impl Shell {
                 Some(help_txt.as_str()),
                 btns.child(ui::button(
                     format!("prof-apply-{i}"),
-                    "適用",
+                    "Apply",
                     Some("play"),
                     Btn::Glass,
                     cx,
@@ -285,7 +285,7 @@ impl Shell {
                 ))
                 .child(ui::button(
                     format!("prof-cap-{i}"),
-                    "今の状態",
+                    "Current state",
                     Some("save"),
                     Btn::Ghost,
                     cx,
@@ -293,7 +293,7 @@ impl Shell {
                 ))
                 .child(ui::button(
                     format!("prof-ren-{i}"),
-                    "名前",
+                    "Name",
                     Some("pencil"),
                     Btn::Ghost,
                     cx,
@@ -308,14 +308,14 @@ impl Shell {
                         };
                         let old_name = old.clone();
                         this.modal = Some(crate::app::Modal::Text {
-                            title: "プロファイル名を変更".into(),
+                            title: "Rename profile".into(),
                             on_ok: Rc::new(move |this, v, _, cx| {
                                 let v = v.trim().to_string();
                                 if v.is_empty() || v == old {
                                     return;
                                 }
                                 if this.prefs.profiles.iter().any(|p| p.name == v) {
-                                    this.toast("同名のプロファイルがあります", true, cx);
+                                    this.toast("A profile with that name already exists", true, cx);
                                     return;
                                 }
                                 // ルールの参照も追従する (プロファイル名は一意)。
@@ -348,7 +348,7 @@ impl Shell {
                 ))
                 .child(ui::button(
                     format!("prof-rec-{i}"),
-                    if recording { "停止" } else { "録画" },
+                    if recording { "Stop" } else { "Record" },
                     Some("circle"),
                     if recording { Btn::Danger } else { Btn::Ghost },
                     cx,
@@ -361,7 +361,7 @@ impl Shell {
                                 .get(i)
                                 .map(|p| p.devices.iter().map(|t| t.changes.len()).sum::<usize>())
                                 .unwrap_or(0);
-                            this.toast(format!("録画終了: {n} 件を記録"), false, cx);
+                            this.toast(format!("Recording stopped: saved {n} changes"), false, cx);
                         } else {
                             this.rec_profile = Some(i);
                             let name = this
@@ -371,7 +371,7 @@ impl Shell {
                                 .map(|p| p.name.clone())
                                 .unwrap_or_default();
                             this.toast(
-                                format!("録画開始: 「{name}」— デバイス画面での変更を記録します"),
+                                format!("Recording started: \"{name}\" — changes on device pages will be saved"),
                                 false,
                                 cx,
                             );
@@ -381,7 +381,7 @@ impl Shell {
                 ))
                 .child(ui::button(
                     format!("prof-del-{i}"),
-                    "削除",
+                    "Delete",
                     Some("trash-2"),
                     Btn::Ghost,
                     cx,
@@ -406,8 +406,8 @@ impl Shell {
         let dev_names: Vec<String> = devs.iter().map(|(_, n)| n.clone()).collect();
         let new_sel = self.auto_form.new_devs.clone();
         prof_body = prof_body.child(ui::row(
-            "対象デバイス",
-            Some("複数選べます — 全デバイスへまとめて適用します"),
+            "Target devices",
+            Some("Multiple allowed — applies to all of them at once"),
             div().child(chips_row_multi(
                 "prof-dev",
                 &dev_names,
@@ -425,13 +425,13 @@ impl Shell {
         let name_in = self.input(
             "auto-prof-name",
             "",
-            "プロファイル名 (例: FPS / 動画編集)",
+            "Profile name (e.g. FPS / Video editing)",
             window,
             cx,
         );
         prof_body = prof_body.child(ui::row_first(
-            "新規プロファイル",
-            Some("名前を付けて作成 → 録画で変更を集める"),
+            "New profile",
+            Some("Name it and create → record to collect changes"),
             div()
                 .flex()
                 .items_center()
@@ -443,7 +443,7 @@ impl Shell {
                 )
                 .child(ui::button(
                     "prof-new",
-                    "作成",
+                    "Create",
                     Some("plus"),
                     Btn::Primary,
                     cx,
@@ -451,11 +451,11 @@ impl Shell {
                         let name = this.input_value("auto-prof-name", cx).unwrap_or_default();
                         let name = name.trim().to_string();
                         if name.is_empty() {
-                            this.toast("プロファイル名を入力してください", true, cx);
+                            this.toast("Enter a profile name", true, cx);
                             return;
                         }
                         if this.prefs.profiles.iter().any(|p| p.name == name) {
-                            this.toast("同名のプロファイルがあります", true, cx);
+                            this.toast("A profile with that name already exists", true, cx);
                             return;
                         }
                         let devs = dev_list(this);
@@ -470,7 +470,7 @@ impl Shell {
                             })
                             .collect();
                         if targets.is_empty() {
-                            this.toast("対象デバイスを選んでください", true, cx);
+                            this.toast("Select target devices", true, cx);
                             return;
                         }
                         this.prefs.profiles.push(SavedProfile {
@@ -484,17 +484,17 @@ impl Shell {
                     },
                 )),
         ));
-        page = page.child(ui::card_titled("設定プロファイル", "layers", None).child(prof_body));
+        page = page.child(ui::card_titled("Settings Profiles", "layers", None).child(prof_body));
 
         // ================= プロセス監視 =================
         let mut rule_body = ui::body().child(ui::row(
-            "現在の前面アプリ",
-            Some("exe 名の部分一致 · 複数一致は下のルールが優先 · 前面が安定してから切替 (~2 秒)"),
+            "Current foreground app",
+            Some("Partial exe-name match · rules lower in the list win on multiple matches · switches after the foreground is stable (~2 s)"),
             div().child(ui::chip(fg_now.clone(), p.accent)),
         ));
         if self.prefs.proc_rules.is_empty() {
             rule_body = rule_body.child(ui::faint(
-                "ルールはまだありません。ゲーム等の exe 名を登録すると、そのアプリが前面の間だけプロファイルを自動適用します。",
+                "No rules yet. Register a game's exe name to auto-apply a profile while that app is in the foreground.",
             ));
         }
         for (i, rule) in self.prefs.proc_rules.clone().iter().enumerate() {
@@ -517,9 +517,9 @@ impl Shell {
                     p.name == rule.on_fg && p.devices.iter().any(|t| t.device == rule.device)
                 })
                 .map(|_| rule.on_fg.clone())
-                .unwrap_or_else(|| format!("{} (未検出)", rule.on_fg));
+                .unwrap_or_else(|| format!("{} (not detected)", rule.on_fg));
             let leave_name = if rule.on_leave.is_empty() {
-                "なし".to_string()
+                "None".to_string()
             } else {
                 self.prefs
                     .profiles
@@ -529,23 +529,23 @@ impl Shell {
                             && p.devices.iter().any(|t| t.device == rule.device)
                     })
                     .map(|_| rule.on_leave.clone())
-                    .unwrap_or_else(|| format!("{} (未検出)", rule.on_leave))
+                    .unwrap_or_else(|| format!("{} (not detected)", rule.on_leave))
             };
             rule_body = rule_body.child(ui::row_first(
                 format!("{} → {}", rule.process, dev_name).as_str(),
-                Some(format!("前面: {fg_name} / 離脱: {leave_name}").as_str()),
+                Some(format!("Foreground: {fg_name} / On leave: {leave_name}").as_str()),
                 div()
                     .flex()
                     .items_center()
                     .gap(px(8.))
                     .child(if active {
-                        ui::chip("適用中", p.ok)
+                        ui::chip("Active", p.ok)
                     } else if !rule.enabled {
-                        ui::chip("無効", p.faint)
+                        ui::chip("Disabled", p.faint)
                     } else if is_running {
-                        ui::chip("実行中", p.accent)
+                        ui::chip("Running", p.accent)
                     } else {
-                        ui::chip("待機", p.faint)
+                        ui::chip("Idle", p.faint)
                     })
                     .child(ui::toggle(
                         format!("rule-en-{i}"),
@@ -561,7 +561,7 @@ impl Shell {
                     ))
                     .child(ui::button(
                         format!("rule-edit-{i}"),
-                        if editing { "閉じる" } else { "編集" },
+                        if editing { "Close" } else { "Edit" },
                         Some("pencil"),
                         if editing { Btn::Glass } else { Btn::Ghost },
                         cx,
@@ -599,7 +599,7 @@ impl Shell {
                     ))
                     .child(ui::button(
                         format!("rule-del-{i}"),
-                        "削除",
+                        "Delete",
                         Some("trash-2"),
                         Btn::Ghost,
                         cx,
@@ -641,7 +641,7 @@ impl Shell {
         let proc_in = self.input(
             "auto-proc-name",
             "",
-            "exe 名 (例: valorant-win64-shipping / 部分一致可)",
+            "exe name (e.g. valorant-win64-shipping / partial match OK)",
             window,
             cx,
         );
@@ -661,8 +661,8 @@ impl Shell {
         let exe_list: Vec<String> = running.iter().map(|(e, _)| e.clone()).collect();
         rule_body = rule_body
             .child(ui::row(
-                "監視するプロセス",
-                Some("実行中のアプリから選ぶか、exe 名を直接入力 (部分一致)"),
+                "Process to watch",
+                Some("Pick a running app or type the exe name (partial match)"),
                 div()
                     .flex()
                     .items_center()
@@ -675,7 +675,7 @@ impl Shell {
                     .child(ui::select(
                         "auto-proc-pick",
                         proc_items,
-                        "実行中のアプリ…",
+                        "Running apps…",
                         220.,
                         cx,
                         move |this, i, w, cx| {
@@ -686,7 +686,7 @@ impl Shell {
                     ))
                     .child(ui::button(
                         "proc-capture",
-                        "前面を取得",
+                        "Get foreground",
                         Some("scan"),
                         Btn::Ghost,
                         cx,
@@ -694,13 +694,13 @@ impl Shell {
                             if let Some(exe) = procmon::foreground_app() {
                                 this.set_input("auto-proc-name", &exe, w, cx);
                             } else {
-                                this.toast("前面アプリを取得できません", true, cx);
+                                this.toast("Cannot get the foreground app", true, cx);
                             }
                         },
                     )),
             ))
             .child(ui::row(
-                "対象デバイス",
+                "Target devices",
                 None,
                 div().child(chips_row(
                     "rule-dev",
@@ -717,7 +717,7 @@ impl Shell {
                 )),
             ))
             .child(ui::row(
-                "前面になったら適用",
+                "Apply when in foreground",
                 None,
                 div().child(chips_row(
                     "rule-fg",
@@ -731,8 +731,8 @@ impl Shell {
                 )),
             ))
             .child(ui::row(
-                "前面を外れたら適用",
-                Some("「なし」なら何もしない (手動で戻す)"),
+                "Apply when leaving foreground",
+                Some("\"None\" does nothing (restore manually)"),
                 div().child(chips_row(
                     "rule-leave",
                     &leave_items,
@@ -746,14 +746,14 @@ impl Shell {
             ))
             .child(ui::row_first(
                 if editing.is_some() {
-                    "ルールを更新"
+                    "Update rule"
                 } else {
-                    "ルールを追加"
+                    "Add rule"
                 },
                 Some(if editing.is_some() {
-                    "フォームの内容で上書きします"
+                    "Overwrites with the form contents"
                 } else {
-                    "約1秒ごとに前面アプリを確認します (最小化中も動作)"
+                    "Checks the foreground app about once per second (works while minimized)"
                 }),
                 {
                     let commit = Rc::new(
@@ -761,7 +761,7 @@ impl Shell {
                             let proc = this.input_value("auto-proc-name", cx).unwrap_or_default();
                             let proc = proc.trim().to_lowercase();
                             if proc.is_empty() {
-                                this.toast("プロセス名を入力してください", true, cx);
+                                this.toast("Enter a process name", true, cx);
                                 return;
                             }
                             let devs = dev_list(this);
@@ -771,7 +771,7 @@ impl Shell {
                             };
                             let fg_items = this.profile_names(dev_idx, &devs, false);
                             if fg_items.is_empty() {
-                                this.toast("先にプロファイルを作成してください", true, cx);
+                                this.toast("Create a profile first", true, cx);
                                 return;
                             }
                             let fg_sel = if this.auto_form.rule_fg == usize::MAX {
@@ -822,9 +822,9 @@ impl Shell {
                             "rule-add"
                         },
                         if editing.is_some() {
-                            "更新"
+                            "Update"
                         } else {
-                            "追加"
+                            "Add"
                         },
                         Some(if editing.is_some() { "check" } else { "plus" }),
                         Btn::Primary,
@@ -834,7 +834,7 @@ impl Shell {
                     if editing.is_some() {
                         b = b.child(ui::button(
                             "rule-cancel",
-                            "キャンセル",
+                            "Cancel",
                             None,
                             Btn::Ghost,
                             cx,
@@ -850,9 +850,9 @@ impl Shell {
             ));
         let pending_n: usize = self.proc_pending.iter().map(|(_, q)| q.len()).sum();
         let proc_trailing = (pending_n > 0)
-            .then(|| ui::chip(format!("保留 {pending_n} 件"), p.warn).into_any_element());
+            .then(|| ui::chip(format!("{pending_n} pending"), p.warn).into_any_element());
         page = page.child(
-            ui::card_titled("プロセス連動", "monitor", proc_trailing).child(rule_body),
+            ui::card_titled("Process Rules", "monitor", proc_trailing).child(rule_body),
         );
 
         div()
@@ -872,9 +872,9 @@ impl Shell {
                             .flex()
                             .flex_col()
                             .gap(px(6.))
-                            .child(ui::title("自動化"))
+                            .child(ui::title("Automation"))
                             .child(ui::sub(
-                                "プロファイルはデバイスへ保存される設定のまとまりです。プロセス連動は「アプリが前面にある間だけ」適用し、離れると復帰プロファイルを適用します。",
+                                "A profile is a set of settings saved to devices. Process rules apply one only while an app is in the foreground, and apply the restore profile when it leaves.",
                             )),
                     )
                     .child(page),
