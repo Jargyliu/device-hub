@@ -1104,3 +1104,122 @@ get/set は cmd が +0x80/同一値の関係。`devID` はプロファイル番�
 - 公式の日本語表示名: 移動同期 / 直線補正 / リップル / LOD / ガラスモード / 20K FPS / 競技モード / 角度調整 /
   スリープ時間 / スクロールBhop / ホイール応答時間 / デバウンスタイム / 高速トリガー / ドングルLED (信号) /
   プロファイルをリセット / 完全初期化。X-Y軸分離は DPI タブの X/Y 切り替えで扱う (設定行には出さない)。
+
+## 6. CompX 系の他メーカー — Scyrox V6 / Pulsar X2 CrazyLight (ATK ドライバに相乗り)
+
+**状態: 実機未確認** (2026-11-19)。どちらも ATK (§4) と同じ CompX 系 ODM のファームで、
+17B report-8 (`0x55` 合計チェックサム)・EEPROM マップ・cmd 番号が共通。
+`devhub-hid/src/atk.rs` の `CompxModel` に機種差だけを書いて同じドライバで話す。
+コードは書き写しておらず、以下の公開資料から事実 (ID・アドレス・符号) だけを照合した。
+
+| 出典 | ライセンス | 使った事実 |
+|---|---|---|
+| VoltWalt/scyrox-v6-kde-battery `PROTOCOL.md` | MIT | Scyrox V6 の VID/PID、フレーム、cmd3/cmd4 応答 (実機キャプチャ) |
+| OpenMouse-Project/mouse-protocol `scyrox/`, `lamzu/atlantis.ts` | AGPL (参照のみ) | CompX の設定 IF FF02/02 (V8S 実機)、3950 系 DPI は @12、LOD 3950 符号、@181/@173/@183、cmd9 |
+| packerlschupfer/pulsar-mouse-linux `x2_crazylight.py`, `nordic.py`, `docs/protocol-x2-crazylight.md` | MIT | CrazyLight の PID、レジスタ表 (全項目が実機で往復確認済みとのこと)、DPI 帯、6 ボタン、4 プロファイル、有線 1K 上限 |
+| cnsta/litecrazy `protocol.rs` | MIT | ドングルの初期化列 (Pulsar 公式ドライバのキャプチャ再生) |
+| Elehiggle/SimplePulsarBatteryNotification, ryanlewis/mousebatt | — / MIT | Windows で CrazyLight の設定コレクションが usage page FF02 であること |
+
+### 6.1 識別
+
+| 機種 | 有線 | ドングル | 設定 IF |
+|---|---|---|---|
+| Scyrox V6 (PAW3950) | 3554:F5F6 | 3554:F5F7 (V8 と共用) | FF02 / 02 |
+| Pulsar X2 CrazyLight | 3710:3414 | 3710:5406 (X3 LHD CrazyLight と共用) | FF02 (usage は照合しない) |
+
+### 6.2 ATK (§4) との差
+
+| 項目 | ATK F1 V3 ULTIMATE+ | Scyrox V6 | Pulsar X2 CrazyLight |
+|---|---|---|---|
+| DPI レコード | @6912 6B (3955) | @12 4B、`(v+1)×50` | @12 4B、Pulsar 拡張 (下記) |
+| DPI 範囲 / 段数 | 50–42000 / 8 | 50–30000・50 刻み / 5 | 10–32000 / 6 |
+| LOD @10 | 1–11 → 0.7–1.7mm | {0.7→3, 1→1, 2→2} | 同左 |
+| ポーリング @0 | 8/4/2/1/16/32/64 | 同じ | 同じ (有線は 1K まで) |
+| スリープ | @173 (10 秒単位) | @183 を読み、@173 と @183 に書く | 同左 |
+| @181 | — | 競技モード ("Highest performance") | ターボモード |
+| ボタン @96 | 5 | 5 | 6 (0x74 = DPI ボタン) |
+| プロファイル (cmd14/15) | 4 | 宣言しない | 4 |
+| cmd16 CID/MID・cmd29・@179・@227・bhop | あり | **送らない** | **送らない** |
+| 工場リセット cmd9 | あり | あり | 出さない (公式が送るのを未確認) |
+| FW (cmd18) | 10 進 | BCD (`02 18` → 2.18) | BCD |
+
+未確認のコマンド番号は他メーカー機に送らない (`0x09` は工場リセット)。
+
+### 6.3 DPI レコード (@12、4B: `[xLo, yLo, flags, crc]`)
+
+flags の下位ニブル = x、上位 = y。各ニブル: bit2-3 = 値の bit8-9。
+`raw = lo | (bit2-3 << 8)`。
+
+- Scyrox (Legacy50): `dpi = (raw + 1) × 50`。
+- Pulsar (PulsarFine): `dpi = (raw + 1) × 10`、bit1 なら `dpi = dpi × 5 + 10000`、
+  bit0 なら `dpi × 2`。書き込みは bbb.pulsar.gg と同じ帯分け:
+  `< 10050` → 10 刻み (band 0)、`< 30100` → 50 刻み (band 2)、それ以上 → 100 刻み (band 3)。
+  800 DPI = `4f 4f 00` (公式の書き込みバイトと一致)。
+
+### 6.4 Pulsar の注意
+
+- 挿したばかりのドングルは公式ドライバの初期化列 (cmd1 ×2, cmd3, cmd2, cmd4) を受けるまで
+  応答しないことがある → open 時に cmd4 が通らなければ一度だけ再生する。
+- 有線ではポーリングが 1K までだが、レートはプロファイルに無線と共通で保存されている。
+  保存値が 1K 超のときに有線から 1K を書くと無線側の設定を潰すだけなので、書かずに成功扱い。
+
+## 7. WLMOUSE (gm.wlmouse.gg) — BEAST G (LAMZU ドライバに相乗り)
+
+**状態: 実機未確認** (2026-11-19)。WL MOUSE HUB は mouse.fit / LAMZU Aurora と同じ機種 DB
+形式 (`IsNewProtocol=1`) で、64B feature report のフレーム (`[0,0,target,len,class,cmd,…]`、
+応答 `a[1]=A1`) もコマンド番号もポーリング符号も LAMZU LM20 (§5) と同一。
+`devhub-core/src/lamzu.rs` の `Vendor` にメーカー差を書き、`lamzu.rs` ドライバで話す。
+
+出典: ARTJ1/WLMouseHub `docs/PROTOCOL.md` と `models.json` (WL MOUSE HUB v1.0.47 から復元、
+HUAN 実機で検証とのこと。ライセンス表記なし — 事実のみ参照)、OpenMouse `vendors.ts`。
+
+| 項目 | 値 |
+|---|---|
+| ID | 有線 36A7:A861、8K 受信機 A860、1K 受信機 A882 (受信機は GetDevicePID `[1,6,0,0x8B,2]` で A861 を返す) |
+| 設定 IF | usage page FFFF の 64B feature report |
+| センサー | PAW3950 固定 (`IsSensorModelCmd=0` — cmd 143 は送らない)、30000 DPI・50 刻み |
+| DPI 段 | 最大 6 (`DPIMaxStageNum`)、色 6×RGB |
+| ポーリング | 有線・8K 受信機 125–8000、1K 受信機 125–1000 |
+| LOD | 0.7 / 1 / 2mm。**書き込みは `[p, lod, 3]` (len 3)** — LAMZU は `[p, lod]` |
+| スリープ | 秒 u16BE、`0xFFFF` = スリープしない |
+| プロファイル | 1..3 |
+| 無い機能 | 高速トリガー (154/26)、スクロール Bhop (153/25)、受信機 LED、ガラスモード、AdaDPI、センサー中心オフセット |
+| ラベル | cmd 139/11 = High-Speed (LAMZU は競技モード)、cmd 147/19 = Tracking (High-Speed 中のみ) |
+
+## 8. Finalmouse XPANEL — UltralightX
+
+**状態: 実機未確認** (2026-11-19)。`devhub-hid/src/finalmouse.rs`。
+
+出典: johnklucinec/ulx_reverse (MIT、ULX ドングルの USB キャプチャ「Mouse Info」と書き込み実装)、
+OpenMouse `finalmouse/` (xpanel の JS から転記。AGPL — 参照のみ)。キャプチャのバイト列は
+単体テストで照合している。
+
+| 項目 | 値 |
+|---|---|
+| ID | ドングル 361D:0100 ("UltralightX dongle")、usage page FF00 / 01。XPANEL はドングル専用 (本体 361D:0102 では設定不可) |
+| 送信 | output report 4: `[4, 2+n, 0x80\|cmd, n, payload…]` 64B。payload 無し = 問い合わせ |
+| 受信 | input report 5: `[5, len, cmd, n, payload…]`。ドングル情報は output 2 → input 3 (cmd 10) |
+| 状態取得 | cmd 21 → cmd 96 (wakeAll) → report 2 cmd 10。状態は別々の report で続けて届く |
+| 設定 | 16 DPI (u16LE、単一値)、17 ポーリング (Hz u16LE: 500–8000)、18 モーション同期、20 ドングル LED (0 オフ / 1 電池 / 2 白)、21 LOD (1 / 2 mm) |
+| 状態報告 | 3 DPI、4 ポーリング、5 電池 mV、11/12 FW (RF / マウス)、13 RSSI、14 シリアル、36 リンク、37 充電、38 SOC% |
+| 電池 | SOC があればそれ、無ければ xpanel の電圧カーブ (3.0V=0% … 4.38V=100%) |
+
+未実装: トーナメントスクロール (23/24 — 値の意味が未確認)。Starlight X は別 PID・別 report ID なので登録していない。
+
+## 9. Ninjutso NinjaForce 旧世代 — Sora V2
+
+**状態: 実機未確認** (2026-11-19)。`devhub-hid/src/ninjutso.rs`。
+NinjaForce の旧世代 WebHID クライアントを転記した OpenMouse `ninjutso/` (AGPL — 参照のみ。
+同プロジェクトでも実機未確認) と、Sora V2 実機で電池読み出しを確認している Fan4Metal/Sora_tray
+(GPL-3 — 参照のみ) を照合した。書き込みは毎回 report 4 を読み直して反映を確かめる。
+
+| 項目 | 値 |
+|---|---|
+| ID | Nordic VID 1915。有線 AE11–AE16 (AE14–16 は PAW3950 版)、1K 受信機 AE1C、8K 受信機 AE8C / AE8A。設定 IF usage page FFA0 |
+| コマンド | feature report 5 (31B): `[cmd, 0, 0, 1, 0, profile, 22, 0, value…]`、15ms 後に report 5 を読む |
+| 設定一式 | feature report 4 に `[38,0,0,1,0,profile]` → 90ms 後に読む。703B (8K 受信機 "Sora V2 8K" は 73B)。末尾 u16LE = 先頭から n-3 バイトの和 |
+| データ (report ID 込み 9 バイト目から) | [7] 電池、[8] 充電、[11] 段数 (≤4)、[12+2i] DPI (u16LE、`(v+1)×50`)、[20] 有効段、[21] モード (1 ハイスピード / 2 競技)、[22] LOD (0 低 / 1 中 / 2 高、低は 3950 版のみ)、[23] モーション同期、[24] レート (0..3 = 1K..8K)、[25] Slam Click |
+| 書き込み cmd | 5 DPI 段 (value 位置に段数、続けて段×u16LE)、6 モーション同期、10 レート (`log2(Hz/1000)`、8K 受信機のみ)、11 LOD、14 有効段、23 モード、36 Slam Click (profile 位置に 1) |
+| 読み cmd | 9 FW (`[6]`=0 マウス / 4 受信機・有線、`[12..9]` を 16 進)、13 プロファイル (`[9]`)、21 電池 (`[9]`%, `[10]` 充電, `[12]` 接続 — Sora_tray 実機)、40 ペア先 PID (`[10]<<8|[9]`) |
+
+未実装: ボタン割り当て (旧世代の形式が未確認)、角度調整 (3950 版のデータ [26] は読めるが書き込み cmd 不明)。

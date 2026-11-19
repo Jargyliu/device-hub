@@ -54,8 +54,10 @@ impl Shell {
                         DriverKind::Xsyd => "XSYD (hub.xsyd.top 互換)".into(),
                         DriverKind::Mousefit => "mouse.fit 互換".into(),
                         DriverKind::Walkplay => "WalkPlay (peq.szwalkplay.com 互換)".into(),
-                        DriverKind::Atk => "ATK HUB 互換".into(),
-                        DriverKind::Lamzu => "LAMZU Aurora 互換".into(),
+                        DriverKind::Atk => "CompX 系 (ATK HUB / Scyrox / Pulsar 互換)".into(),
+                        DriverKind::Lamzu => "LAMZU Aurora / WL MOUSE HUB 互換".into(),
+                        DriverKind::Finalmouse => "Finalmouse XPANEL 互換".into(),
+                        DriverKind::Ninjutso => "Ninjutso NinjaForce 互換".into(),
                         DriverKind::Unsupported => "未対応".into(),
                     },
                 ))

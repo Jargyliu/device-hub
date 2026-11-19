@@ -37,7 +37,8 @@ docs/FRONTEND.md        フロントエンドの構造
 - 契約: v2 (`Capabilities` + `DeviceState` + 細粒度 `Change` + `HubEvent::Info` で本体側状態変化を通知)。
 - devhub-hid: 実装済 — `transport.rs` (feature/output/input report) + `mousefit.rs`
   (feature-report 用に温存、現行機種は使わない) + `mousefit8.rs` (report-8/EEPROM、有線・ドングル共通)
-  + `xsyd.rs` (SU66 Max) + `atk.rs` (ATK HUB 系、report-8/EEPROM、CID/MID 機種確定)。
+  + `xsyd.rs` (SU66 Max) + `atk.rs` (CompX 系: ATK HUB / Scyrox / Pulsar、report-8/EEPROM)
+  + `lamzu.rs` (LAMZU / WLMOUSE、64B feature) + `finalmouse.rs` + `ninjutso.rs`。
   v1 時代のコードは `legacy/`、解析用に取得した配布原本は Git 管理外（`.private-analysis/`）。
   検証用 example: `enum` (列挙) / `kbdiff` (SU66 差分読み出し) / `lite2e` (ライティング往復) / `tp55e2e` (TP55 EQ 往復)
   / `atkprobe` (ATK 生 EEPROM) / `atkread` (ATK ドライバ経路の読み書き往復)。
@@ -55,6 +56,12 @@ docs/FRONTEND.md        フロントエンドの構造
   プロファイル4・工場リセット — いずれも往復確認。**ドングル 373b:1278** は同一 16B プロトコル
   中継 + cmd29 ドングル FW + 休眠検知 (asleep/HubEvent・覚醒で CID/MID 再確定)。
   未対応: マクロ @768・dynamicSensitivity・sensorAngle・BT・FW 更新 — §4)。
+
+- 公開資料から追加 (2026-11-19、**実機未確認** — docs/PROTOCOL_NOTES §6–§9):
+  Scyrox V6・Pulsar X2 CrazyLight (CompX 系 → `atk.rs` の `CompxModel` 機種表)、
+  WLMOUSE BEAST G (LAMZU と同じ 64B プロトコル → `devhub-core/src/lamzu.rs` の `Vendor`)、
+  Finalmouse UltralightX ドングル (`finalmouse.rs`)、Ninjutso Sora V2 (`ninjutso.rs`)。
+  実機を挿したら全タブを一通り操作し、registry の `verified` と docs を更新すること。
 
 ## ビルド / 実行
 

@@ -12,7 +12,7 @@
 //! - 未初期化プロファイル枠は走査しない (p4 が HID エラーを起こす場合あり)。
 
 use devhub_core::backend::*;
-use devhub_core::lamzu::{caps as lamzu_caps, model_by_pid, LamzuModel, MODELS};
+use devhub_core::lamzu::{caps_for, default_for_vid, model_by_id, LamzuModel, Vendor};
 use devhub_core::model::*;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -168,7 +168,12 @@ pub fn open(
     let d = LamzuDriver {
         dev: Mutex::new(dev),
         info: Mutex::new(info.clone()),
-        caps: Mutex::new(lamzu_caps(&MODELS[0], info.transport, 4)),
+        caps: Mutex::new(caps_for(
+            default_for_vid(info.vid),
+            info.transport,
+            4,
+            if info.transport == Transport::Wireless24G { info.pid } else { 0 },
+        )),
         model: Mutex::new(None),
         sensor: Mutex::new(4),
         stop,
@@ -242,16 +247,16 @@ impl LamzuDriver {
     /// 機種 (有線 = 自分の PID、ドングル = GetDevicePID のペア先) とセンサーを判定し、
     /// 製品名・モデル・caps を確定する。未知のペア先は `supported=false`。
     fn detect(&self) {
-        let (transport, own_pid) = {
+        let (transport, own_vid, own_pid) = {
             let i = self.info.lock().unwrap_or_else(|p| p.into_inner());
-            (i.transport, i.pid)
+            (i.transport, i.vid, i.pid)
         };
         let pid = if transport == Transport::Wireless24G {
             match self.run(1, 6, 0, 139, &[2]) {
                 Ok(r) if r.len() >= 13 => {
                     let vid = u16::from_be_bytes([r[9], r[10]]);
                     let pid = u16::from_be_bytes([r[11], r[12]]);
-                    (vid == 0x37B0).then_some(pid)
+                    Some((vid, pid))
                 }
                 _ => {
                     // マウスが眠っている/未接続 — 受信機名のまま。
@@ -260,19 +265,25 @@ impl LamzuDriver {
                 }
             }
         } else {
-            Some(own_pid)
+            Some((own_vid, own_pid))
         };
-        let model = pid.and_then(model_by_pid);
+        let model = pid.and_then(|(v, p)| model_by_id(v, p));
+        let base = model.unwrap_or(default_for_vid(own_vid));
         // センサー型番 [2,1,1,143] → a[7] (1=3395, 2=3950, 4=3955)。
-        let sensor = self
-            .run(2, 1, 1, 143, &[])
-            .ok()
-            .and_then(|r| r.get(7).copied())
-            .unwrap_or(4);
+        // WLMOUSE (IsSensorModelCmd=0) は送らず機種表の値を使う。
+        let sensor = if base.v.sensor_cmd {
+            self.run(2, 1, 1, 143, &[])
+                .ok()
+                .and_then(|r| r.get(7).copied())
+                .unwrap_or(4)
+        } else {
+            base.v.sensor
+        };
         *self.sensor.lock().unwrap_or_else(|p| p.into_inner()) = sensor;
         *self.model.lock().unwrap_or_else(|p| p.into_inner()) = model;
-        let m = model.unwrap_or(&MODELS[0]);
-        *self.caps.lock().unwrap_or_else(|p| p.into_inner()) = lamzu_caps(m, transport, sensor);
+        let receiver = if transport == Transport::Wireless24G { own_pid } else { 0 };
+        *self.caps.lock().unwrap_or_else(|p| p.into_inner()) =
+            caps_for(base, transport, sensor, receiver);
         let mut i = self.info.lock().unwrap_or_else(|p| p.into_inner());
         i.asleep = false;
         i.supported = model.is_some();
@@ -280,13 +291,21 @@ impl LamzuDriver {
             i.name = m.name.into();
             i.model = m.model.into();
         } else if transport == Transport::Wireless24G {
-            i.name = "LAMZU 8K レシーバー (未対応のマウス)".into();
-            i.model = "lamzu-dongle".into();
+            i.name = format!("{} レシーバー (未対応のマウス)", base.v.brand);
         }
     }
 
     fn caps_now(&self) -> Capabilities {
         self.caps.lock().unwrap_or_else(|p| p.into_inner()).clone()
+    }
+
+    /// 接続中機種のメーカー差 (未確定なら受信機 VID の既定)。
+    fn vendor(&self) -> &'static Vendor {
+        if let Some(m) = *self.model.lock().unwrap_or_else(|p| p.into_inner()) {
+            return m.v;
+        }
+        let vid = self.info.lock().unwrap_or_else(|p| p.into_inner()).vid;
+        default_for_vid(vid).v
     }
 
     fn has(&self, id: &str) -> bool {
@@ -435,7 +454,7 @@ impl LamzuDriver {
     fn read_stages(&self, dev: u8) -> HubResult<Vec<DpiStage>> {
         let r = self.run(2, 10, 1, 129, &[dev, 6])?;
         let n = u8_at(&r, 8)? as usize;
-        if !(1..=5).contains(&n) || r.len() < 9 + n * 4 {
+        if !(1..=self.vendor().max_stages).contains(&n) || r.len() < 9 + n * 4 {
             return Err(HubError::Protocol(format!("lamzu: bad dpi table n={n}")));
         }
         let colors = self.run(2, 19, 2, 129, &[dev]).ok();
@@ -467,7 +486,7 @@ impl LamzuDriver {
     /// ステージ値+色の書き込み (アクティブ段は変えない)。
     /// 値→色→有効段の順に別コマンドなので、入力検証を先に済ませる。
     fn write_stages(&self, prof: u8, stages: &[DpiStage]) -> HubResult<()> {
-        if stages.is_empty() || stages.len() > 5 {
+        if stages.is_empty() || stages.len() > self.vendor().max_stages {
             return Err(HubError::Invalid("dpi stage count".into()));
         }
         for s in stages {
@@ -774,6 +793,9 @@ impl DeviceDriver for LamzuDriver {
             (2, 1, 147, "tracking_mode"),
             (2, 1, 141, "dpi_xy"),
         ] {
+            if id != "dpi_xy" && !self.has(id) {
+                continue;
+            }
             if let Ok(v) = self.get(sub, f, cmdg, dev) {
                 settings.insert(id.into(), SettingValue::Bool(v == 1));
             }
@@ -783,14 +805,18 @@ impl DeviceDriver for LamzuDriver {
             settings.insert("angle_tune".into(), SettingValue::Num(signed as f32));
         }
         // SensorOffset は値が a[9] (a[8] は空き)。
-        if let Ok(r) = self.run(2, 3, 1, 149, &[dev]) {
+        if let Some(r) = self
+            .has("sensor_offset")
+            .then(|| self.run(2, 3, 1, 149, &[dev]).ok())
+            .flatten()
+        {
             let v = u8_at(&r, 9).unwrap_or(0);
             let signed = if v > 100 { v as i64 - 256 } else { v as i64 };
             settings.insert("sensor_offset".into(), SettingValue::Num(signed as f32));
         }
         // ドングル経由のみ有効な項目 (有線 FW では a3/無視): 受信機 3 灯、
         // ガラスモード。DPI インジケーターは無線でも a3 なので読まない。
-        if self.is_dongle() {
+        if self.is_dongle() && self.has("dongle_led") {
             // マスタースイッチ: light_idx=255 のモード — 公式 K0() は
             // 既知設定があり値が 0 以外なら ON (実機は 0xFF を返す)。
             if let Ok(r) = self.run(1, 5, 2, 128, &[dev, 255]) {
@@ -820,10 +846,16 @@ impl DeviceDriver for LamzuDriver {
                     "sleep_min".into(),
                     SettingValue::Choice(((secs / 60).max(1)) as i64),
                 );
+            } else if self.vendor().sleep_opts.contains(&0) {
+                settings.insert("sleep_min".into(), SettingValue::Choice(0));
             }
         }
         // SpeedEnable: a[8]=L, a[9]=R。
-        if let Ok(r) = self.run(2, 3, 0, 154, &[dev]) {
+        if let Some(r) = self
+            .has("rapid_left")
+            .then(|| self.run(2, 3, 0, 154, &[dev]).ok())
+            .flatten()
+        {
             settings.insert(
                 "rapid_left".into(),
                 SettingValue::Bool(u8_at(&r, 8).unwrap_or(0) == 1),
@@ -834,7 +866,11 @@ impl DeviceDriver for LamzuDriver {
             );
         }
         // ScrollHP (B-hop): a[8]=方向, a[9..11]=u16BE ms。
-        if let Ok(r) = self.run(2, 4, 0, 153, &[dev]) {
+        if let Some(r) = self
+            .has("bhop_dir")
+            .then(|| self.run(2, 4, 0, 153, &[dev]).ok())
+            .flatten()
+        {
             settings.insert(
                 "bhop_dir".into(),
                 SettingValue::Choice(u8_at(&r, 8).unwrap_or(0) as i64),
@@ -937,7 +973,18 @@ impl DeviceDriver for LamzuDriver {
                         11..=19 => (((mm10 / 10) << 4) | (mm10 % 10)) as u8,
                         _ => return Err(HubError::Invalid("lod".into())),
                     };
-                    self.set(2, 1, 8, prof, v)
+                    if !self.vendor().lod_mode3 {
+                        return self.set(2, 1, 8, prof, v);
+                    }
+                    // WLMOUSE: `[p, lod, 3]` (WL MOUSE HUB SetLod)。
+                    if self.get(2, 1, 136, prof).ok() == Some(v) {
+                        return Ok(());
+                    }
+                    match self.run(2, 3, 1, 8, &[prof, v, 3]) {
+                        Ok(_) => Ok(()),
+                        Err(_) if self.get(2, 1, 136, prof).ok() == Some(v) => Ok(()),
+                        Err(e) => Err(e),
+                    }
                 }
                 "motion_sync" => self.set(2, 1, 9, prof, value.as_bool() as u8),
                 "angle_snap" => self.set(2, 1, 4, prof, value.as_bool() as u8),
@@ -955,9 +1002,11 @@ impl DeviceDriver for LamzuDriver {
                     let on = value.as_bool();
                     // 公式: 20K FPS は競技モードが ON のときだけ有効にできる。
                     if on && self.get(2, 1, 139, prof).ok() != Some(1) {
-                        return Err(HubError::Invalid(
-                            "20K FPS は先に競技モードを ON にしてください".into(),
-                        ));
+                        let v = self.vendor();
+                        return Err(HubError::Invalid(format!(
+                            "{}は先に{}を ON にしてください",
+                            v.tracking_label, v.hyper_label
+                        )));
                     }
                     self.set(2, 1, 19, prof, on as u8)
                 }
@@ -1050,12 +1099,13 @@ impl DeviceDriver for LamzuDriver {
                 }
                 "debounce" => self.set(2, 0, 8, prof, value.as_num().clamp(0., 255.) as u8),
                 "sleep_min" => {
-                    // 公式の選択肢は 1/5/10/15/20/25 分のみ (OFF は書けない)。
+                    // 選択肢は機種表どおり (LAMZU は 1/5/10/15/20/25 分のみ、OFF は書けない)。
+                    // 0 = スリープしない (WLMOUSE は 0xFFFF を書く)。
                     let min = value.as_choice();
-                    if !matches!(min, 1 | 5 | 10 | 15 | 20 | 25) {
-                        return Err(HubError::Invalid("スリープ時間は 1〜25 分から選んでください".into()));
+                    if !self.vendor().sleep_opts.contains(&min) {
+                        return Err(HubError::Invalid("選べないスリープ時間です".into()));
                     }
-                    let secs = (min * 60) as u16;
+                    let secs = if min == 0 { 0xFFFF } else { (min * 60) as u16 };
                     let [hi, lo] = secs.to_be_bytes();
                     let read_back = || {
                         self.run(2, 3, 0, 135, &[prof]).ok().map(|r| {

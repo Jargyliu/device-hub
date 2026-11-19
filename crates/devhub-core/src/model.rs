@@ -72,6 +72,10 @@ pub enum DriverKind {
     Atk,
     /// www.lamzu.net / Aurora 系 (64B feature report、if2 FFFF:00)。
     Lamzu,
+    /// Finalmouse XPANEL 系 (UltralightX ドングル。64B output 4 / input 5)。
+    Finalmouse,
+    /// Ninjutso NinjaForce 旧世代 (Sora V2。feature report 5 / 4)。
+    Ninjutso,
     /// 未割り当て (検出だけできる)。
     Unsupported,
 }

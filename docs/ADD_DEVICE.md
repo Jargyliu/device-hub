@@ -14,7 +14,12 @@
 | HTS Plus Pro (無線) | ドングル 33E4:3854 | FF02 / 02 | Mousefit → `mousefit8.rs` (report-8/EEPROM) | www.mouse.fit | **v2 実機検証済** (全設定・DPI・ボタン・マクロ・ポーリング 125–8K・磁気ボタン校正/押下深さ・休眠検知/覚醒自動再読) |
 | HTS Plus Pro (有線) | 33E4:5219 | FF02 / 02 | Mousefit → `mousefit8.rs` (report-8/EEPROM) | www.mouse.fit | **v2 実機検証済** (有線でも feature report は使えず report-8) |
 | HTX Ultra | 33E4:5608, 5617, 5618, 5619 | FF02 / 02 (推定) | Mousefit | www.mouse.fit | 機種表から登録 / 未検証 |
-| ATK F1 Ultimate | 未確定 | 未確定 | 未確定 | (mouse.fit の機種表に無い) | §7 を参照 |
+| ATK F1 V3 ULTIMATE+ | 373B:12A7 / ドングル 1278 | FF02 / 02 | Atk (`atk.rs`) | hub.atk.pro | **実機検証済** |
+| Scyrox V6 | 3554:F5F6 / ドングル F5F7 | FF02 / 02 | Atk (`atk.rs`、`CompxModel` SCYROX_V6) | Scyrox S-Center | 公開資料から実装 / **未検証** (PROTOCOL_NOTES §6) |
+| Pulsar X2 CrazyLight | 3710:3414 / ドングル 5406 | FF02 | Atk (`atk.rs`、`CompxModel` PULSAR_X2CL) | bbb.pulsar.gg | 公開資料から実装 / **未検証** (§6) |
+| WLMOUSE BEAST G | 36A7:A861 / 受信機 A860 (8K)・A882 (1K) | FFFF | Lamzu (`lamzu.rs`、`Vendor` WLMOUSE) | gm.wlmouse.gg | 公開資料から実装 / **未検証** (§7) |
+| Finalmouse UltralightX | ドングル 361D:0100 | FF00 / 01 | Finalmouse (`finalmouse.rs`) | XPANEL | 公開資料から実装 / **未検証** (§8) |
+| Ninjutso Sora V2 | 1915:AE11–AE16 / 受信機 AE1C・AE8C・AE8A | FFA0 | Ninjutso (`ninjutso.rs`) | NinjaForce | 公開資料から実装 / **未検証** (§9) |
 
 **接続方式でプロトコルが変わる点に注意**: mouse.fit の新プロトコル (64B feature report) は
 有線機種専用 — 8K ドングルは Windows の feature report を一切持たず、ドングル経由は
