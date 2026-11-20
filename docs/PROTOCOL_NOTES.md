@@ -1163,6 +1163,24 @@ flags の下位ニブル = x、上位 = y。各ニブル: bit2-3 = 値の bit8-9
 - 有線ではポーリングが 1K までだが、レートはプロファイルに無線と共通で保存されている。
   保存値が 1K 超のときに有線から 1K を書くと無線側の設定を潰すだけなので、書かずに成功扱い。
 
+### 6.5 Scyrox V6s / V8s (2026-11-20 追記)
+
+V6s には 2 世代ある。
+
+1. **CompX 世代** — VID 3554、有線 F515 / Turbo 8K ドングル F517 (V8s と共用)、設定 IF FF02/02。
+   V6 と同じ 17B report-8 だが DPI は @6912 の 3955 形式 (6B、42002 以上は値を半分にして帯マーカー
+   x = bit0 / y = bit4 を立てる)。LOD @10 = 1..5 → 0.7 / 0.9 / 1.2 / 1.4 / 1.6mm、デバウンス上限 30ms
+   (ピンクは 15ms)、スリープは @173 と @183 に 10 秒単位 (10 秒〜30 分)、@181 競技モード、
+   @8 20K FPS (競技モードが前提)、@191 = 1 で @189 角度調整 (符号付き °)、cmd9 工場リセット。
+   機種は cmd1 (EncryptionData: 4B 乱数 + 4B 0) の応答 `[10]` CID (= 62)、`[11]` MID、`[12]` 種別で確定
+   (MID 1/10/11 = V8、2/12/13 = V6、14–16 = V8s、17–19 = V6s、5 = V8s ピンク、6 = V6s ピンク)。
+   出典: 0merfgzl/scyrox-s-app (MIT、scyrox.net の JS から抽出し V6s + Turbo 8K 実機で確認)。
+2. **新世代** — VID 395A、有線 000B (製品名 "Scyrox V6S") / Turbo 8K レシーバー 000E / 000C、
+   設定 IF FF00/02、64B output report 8 (`[8, cmd…, 0…, (8 + Σcmd) & 0xFF]`)。公開されているのは
+   状態 `2E 00 03` (`[4]` 電池 `[5]` 充電 `[6]` 接続) と版 `18` / `21` だけで、設定コマンドは
+   S-Center 2.0 (gaming.scyrox.net) の JS にしか無い。registry には「検出のみ」で登録した。
+   出典: zzy6-a/ScyroxTray、MoFeng2223/BrimDeck (Apache-2.0)、late-autumn-gif/mousedock (MIT)。
+
 ## 7. WLMOUSE (gm.wlmouse.gg) — BEAST G (LAMZU ドライバに相乗り)
 
 **状態: 実機未確認** (2026-11-19)。WL MOUSE HUB は mouse.fit / LAMZU Aurora と同じ機種 DB

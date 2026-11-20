@@ -15,7 +15,9 @@
 | HTS Plus Pro (有線) | 33E4:5219 | FF02 / 02 | Mousefit → `mousefit8.rs` (report-8/EEPROM) | www.mouse.fit | **v2 実機検証済** (有線でも feature report は使えず report-8) |
 | HTX Ultra | 33E4:5608, 5617, 5618, 5619 | FF02 / 02 (推定) | Mousefit | www.mouse.fit | 機種表から登録 / 未検証 |
 | ATK F1 V3 ULTIMATE+ | 373B:12A7 / ドングル 1278 | FF02 / 02 | Atk (`atk.rs`) | hub.atk.pro | **実機検証済** |
-| Scyrox V6 | 3554:F5F6 / ドングル F5F7 | FF02 / 02 | Atk (`atk.rs`、`CompxModel` SCYROX_V6) | Scyrox S-Center | 公開資料から実装 / **未検証** (PROTOCOL_NOTES §6) |
+| Scyrox V6 / V8 | 3554:F5F6 / ドングル F5F7・F5F4 | FF02 / 02 | Atk (`atk.rs`、SCYROX_V6、cmd1 で機種確定) | Scyrox S-Center | 公開資料から実装 / **未検証** (PROTOCOL_NOTES §6) |
+| Scyrox V6s / V8s | 3554:F515 / Turbo 8K ドングル F517 | FF02 / 02 | Atk (`atk.rs`、SCYROX_V6S、3955 形式) | Scyrox S-Center | 他プロジェクトが V6s 実機で確認した値 / **未検証** (§6.5) |
+| Scyrox V6S / V8S 新世代 | 395A:000B / レシーバー 000E・000C | FF00 / 02 | 未対応 (検出のみ) | S-Center 2.0 | 設定プロトコル未入手 (§6.5) |
 | Pulsar X2 CrazyLight | 3710:3414 / ドングル 5406 | FF02 | Atk (`atk.rs`、`CompxModel` PULSAR_X2CL) | bbb.pulsar.gg | 公開資料から実装 / **未検証** (§6) |
 | WLMOUSE BEAST G | 36A7:A861 / 受信機 A860 (8K)・A882 (1K) | FFFF | Lamzu (`lamzu.rs`、`Vendor` WLMOUSE) | gm.wlmouse.gg | 公開資料から実装 / **未検証** (§7) |
 | Finalmouse UltralightX | ドングル 361D:0100 | FF00 / 01 | Finalmouse (`finalmouse.rs`) | XPANEL | 公開資料から実装 / **未検証** (§8) |

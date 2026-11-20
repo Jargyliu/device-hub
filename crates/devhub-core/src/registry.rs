@@ -163,8 +163,10 @@ pub const KNOWN: &[KnownDevice] = &[
         verified: true,
     },
     // ---------------------------------------------------------------- マウス (CompX 系 / ATK ドライバ)
-    // Scyrox V6 (PAW3950) — 公開の解析 (scyrox-v6-kde-battery PROTOCOL.md) の VID/PID。
-    // 設定 IF は CompX 共通の FF02/02 (OpenMouse が Scyrox V8S 実機で確認)。実機未確認。
+    // Scyrox (CompX VID 3554、設定 IF FF02/02)。ドライバが cmd1 ハンドシェイクの CID/MID で
+    // V6 / V8 (PAW3950、@12) と V6s / V8s (3955、@6912) を見分け、名前と機種表を確定する。
+    // model はハンドシェイクが無応答のときの既定。V6s + Turbo 8K の値は scyrox-s-app (MIT) が実機確認。
+    // V6 / V8 有線。
     KnownDevice {
         vid: 0x3554,
         pid: 0xF5F6,
@@ -178,7 +180,7 @@ pub const KNOWN: &[KnownDevice] = &[
         driver: DriverKind::Atk,
         verified: false,
     },
-    // Scyrox 8K ドングル (V6 / V8 共用。どちらも PAW3950・@12 形式)。
+    // V6 / V8 の 8K ドングル。
     KnownDevice {
         vid: 0x3554,
         pid: 0xF5F7,
@@ -190,6 +192,92 @@ pub const KNOWN: &[KnownDevice] = &[
         name: "Scyrox V6",
         transport: Transport::Wireless24G,
         driver: DriverKind::Atk,
+        verified: false,
+    },
+    // Scyrox 2.4G ドングル (ペア先はハンドシェイクで確定)。
+    KnownDevice {
+        vid: 0x3554,
+        pid: 0xF5F4,
+        usage_page: Some(0xFF02),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6",
+        name: "Scyrox",
+        transport: Transport::Wireless24G,
+        driver: DriverKind::Atk,
+        verified: false,
+    },
+    // V6s / V8s 有線。
+    KnownDevice {
+        vid: 0x3554,
+        pid: 0xF515,
+        usage_page: Some(0xFF02),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6s",
+        name: "Scyrox V6s / V8s",
+        transport: Transport::Wired,
+        driver: DriverKind::Atk,
+        verified: false,
+    },
+    // V6s / V8s の Turbo 8K ドングル。
+    KnownDevice {
+        vid: 0x3554,
+        pid: 0xF517,
+        usage_page: Some(0xFF02),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6s",
+        name: "Scyrox V6s / V8s",
+        transport: Transport::Wireless24G,
+        driver: DriverKind::Atk,
+        verified: false,
+    },
+    // 新世代 V6S / V8S (VID 395A、S-Center 2.0 の 64B report 8 プロトコル)。
+    // 設定コマンドが公開資料に無いので「検出のみ」。ScyroxTray / BrimDeck が PID を実機で確認。
+    // 新世代 V6S 有線 (製品名 Scyrox V6S)。
+    KnownDevice {
+        vid: 0x395A,
+        pid: 0x000B,
+        usage_page: Some(0xFF00),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6s-gen2",
+        name: "Scyrox V6S (S-Center 2.0)",
+        transport: Transport::Wired,
+        driver: DriverKind::Unsupported,
+        verified: false,
+    },
+    // 新世代 Turbo 8K レシーバー。
+    KnownDevice {
+        vid: 0x395A,
+        pid: 0x000E,
+        usage_page: Some(0xFF00),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6s-gen2",
+        name: "Scyrox V6S / V8S (S-Center 2.0)",
+        transport: Transport::Wireless24G,
+        driver: DriverKind::Unsupported,
+        verified: false,
+    },
+    // 新世代 (000C)。
+    KnownDevice {
+        vid: 0x395A,
+        pid: 0x000C,
+        usage_page: Some(0xFF00),
+        usage: Some(0x02),
+        kind: DeviceKind::Mouse,
+        vendor: "Scyrox",
+        model: "scyrox-v6s-gen2",
+        name: "Scyrox V6S / V8S (S-Center 2.0)",
+        transport: Transport::Wireless24G,
+        driver: DriverKind::Unsupported,
         verified: false,
     },
     // Pulsar X2 CrazyLight — VID は Sonix 系の 3710 だが中身は CompX 系 17B report-8。

@@ -55,6 +55,11 @@ mod ee {
     pub const MOVE_LED: u16 = 179;
     /// 競技モード (Scyrox "Highest performance") / ターボモード (Pulsar)。
     pub const PERF_MODE: u16 = 181;
+    /// Scyrox 20K FPS (公式 flash 名 Scyrox20K)。
+    pub const FPS_20K: u16 = 8;
+    /// Scyrox 角度調整 (符号付き °) と有効フラグ。
+    pub const ANGLE_TUNE: u16 = 189;
+    pub const ANGLE_TUNE_ON: u16 = 191;
     /// スリープ時間の実体 (Scyrox / Pulsar。@173 にも同値を書く)。10 秒単位。
     pub const SLEEP_TIME: u16 = 183;
     /// ボタン別ショートカット領域 — 32B × slot (slot index = 物理ボタン)。
@@ -103,7 +108,7 @@ pub struct CompxModel {
     pub debounce_max: f32,
     /// スリープを @183 から読み、@173 と @183 の両方に書く (Scyrox / Pulsar)。
     pub sleep_mirror: bool,
-    /// スリープの選択肢 (分)。
+    /// スリープの選択肢 (秒。wire は 10 秒単位)。
     pub sleep_opts: &'static [i64],
     /// ATK HUB 固有 (cmd16 CID/MID, cmd29, @179, @227, bhop)。
     pub atk_hub: bool,
@@ -116,6 +121,12 @@ pub struct CompxModel {
     pub fw_bcd: bool,
     /// ドングル初回接続時に Pulsar 公式ドライバの初期化列が要る。
     pub pulsar_init: bool,
+    /// Scyrox: cmd1 ハンドシェイクで CID/MID を読み、機種 (V6/V8/V6s/V8s) と色を確定する。
+    pub scyrox_ident: bool,
+    /// @8 20K FPS (Scyrox20K、競技モード ON のときだけ)。
+    pub fps20k: bool,
+    /// @189 角度調整 (-30..30°、@191 が有効フラグ)。
+    pub angle_tune: bool,
 }
 
 const RATES_ALL: &[i64] = &[125, 250, 500, 1000, 2000, 4000, 8000];
@@ -145,13 +156,16 @@ pub const ATK_F1V3U: CompxModel = CompxModel {
     buttons: BUTTONS_5,
     debounce_max: 32.,
     sleep_mirror: false,
-    sleep_opts: &[1, 2, 3, 5, 10, 30, 60],
+    sleep_opts: &[60, 120, 180, 300, 600, 1800, 3600],
     atk_hub: true,
     perf_mode: None,
     factory_reset: true,
     profiles: 4,
     fw_bcd: false,
     pulsar_init: false,
+    scyrox_ident: false,
+    fps20k: false,
+    angle_tune: false,
 };
 
 /// Scyrox V6 (PAW3950)。有線 3554:f5f6 / 8K ドングル 3554:f5f7
@@ -169,16 +183,85 @@ pub const SCYROX_V6: CompxModel = CompxModel {
     rates_wireless: RATES_ALL,
     lod: LodKind::Table(LOD_3950),
     buttons: BUTTONS_5,
-    debounce_max: 20.,
+    debounce_max: 30.,
     sleep_mirror: true,
-    sleep_opts: &[1, 2, 3, 5, 10, 15, 20, 30],
+    sleep_opts: SCYROX_SLEEP,
     atk_hub: false,
     perf_mode: Some("Competitive mode"),
     factory_reset: true,
     profiles: 0,
     fw_bcd: true,
     pulsar_init: false,
+    scyrox_ident: true,
+    fps20k: false,
+    angle_tune: false,
 };
+
+/// S-Center のスリープ選択肢 (10 秒 / 30 秒 / 1 / 5 / 10 / 30 分)。
+const SCYROX_SLEEP: &[i64] = &[10, 30, 60, 300, 600, 1800];
+
+/// PAW3955 の 5 段 LOD (S-Center: 1..5 = 0.7 / 0.9 / 1.2 / 1.4 / 1.6mm)。
+const LOD_SCYROX_3955: &[(i64, u8)] = &[(7, 1), (9, 2), (12, 3), (14, 4), (16, 5)];
+
+/// Scyrox V6s / V8s (CompX 世代、3554:F515 有線 / F517 Turbo 8K ドングル)。
+/// DPI は @6912 の 3955 形式 (ATK F1 V3 と同じ)、最大 50000 (42001 超は 2 倍帯)。
+/// 0merfgzl/scyrox-s-app (MIT) が V6s + Turbo 8K 実機で読み書きを確認した値。
+pub const SCYROX_V6S: CompxModel = CompxModel {
+    model: "scyrox-v6s",
+    dpi: DpiLayout::Sensor3955,
+    dpi_min: 50,
+    dpi_max: 50000,
+    dpi_step: 1,
+    max_stages: 5,
+    stage_colors: false,
+    xy_split: false,
+    rates_wired: RATES_ALL,
+    rates_wireless: RATES_ALL,
+    lod: LodKind::Table(LOD_SCYROX_3955),
+    buttons: BUTTONS_5,
+    debounce_max: 30.,
+    sleep_mirror: true,
+    sleep_opts: SCYROX_SLEEP,
+    atk_hub: false,
+    perf_mode: Some("Competitive mode"),
+    factory_reset: true,
+    profiles: 0,
+    fw_bcd: true,
+    pulsar_init: false,
+    scyrox_ident: true,
+    fps20k: true,
+    angle_tune: true,
+};
+
+/// ピンクの V6s / V8s は公式でデバウンス上限 15ms の別グループ。
+pub const SCYROX_V6S_PINK: CompxModel = CompxModel {
+    debounce_max: 15.,
+    ..SCYROX_V6S
+};
+
+/// Scyrox CID 62 の MID → (表示名, 機種表)。scyrox.net の cfg.json (S-App の対応表)。
+fn scyrox_model(mid: u8) -> Option<(&'static str, &'static CompxModel)> {
+    Some(match mid {
+        1 => ("Scyrox V8 Black", &SCYROX_V6),
+        10 => ("Scyrox V8 White", &SCYROX_V6),
+        11 => ("Scyrox V8 Yellow", &SCYROX_V6),
+        2 => ("Scyrox V6", &SCYROX_V6),
+        12 => ("Scyrox V6 White", &SCYROX_V6),
+        13 => ("Scyrox V6 Blue", &SCYROX_V6),
+        14 => ("Scyrox V8s White", &SCYROX_V6S),
+        15 => ("Scyrox V8s Yellow", &SCYROX_V6S),
+        16 => ("Scyrox V8s Black", &SCYROX_V6S),
+        17 => ("Scyrox V6s White", &SCYROX_V6S),
+        18 => ("Scyrox V6s Blue", &SCYROX_V6S),
+        19 => ("Scyrox V6s Black", &SCYROX_V6S),
+        5 => ("Scyrox V8s Pink", &SCYROX_V6S_PINK),
+        6 => ("Scyrox V6s Pink", &SCYROX_V6S_PINK),
+        7 => ("Scyrox (patterned) Black", &SCYROX_V6S),
+        8 => ("Scyrox (patterned) Red", &SCYROX_V6S),
+        9 => ("Scyrox (patterned) White", &SCYROX_V6S),
+        _ => return None,
+    })
+}
 
 /// Pulsar X2 CrazyLight。有線 3710:3414 (最大 1K) / 8K ドングル 3710:5406。
 pub const PULSAR_X2CL: CompxModel = CompxModel {
@@ -203,7 +286,7 @@ pub const PULSAR_X2CL: CompxModel = CompxModel {
     ],
     debounce_max: 20.,
     sleep_mirror: true,
-    sleep_opts: &[1, 2, 3, 5, 10, 15, 20, 30],
+    sleep_opts: &[60, 120, 180, 300, 600, 900, 1200, 1800],
     atk_hub: false,
     perf_mode: Some("Turbo mode"),
     // 公式 (Fusion / bbb.pulsar.gg) が cmd9 を送るのを確認できていない。
@@ -211,12 +294,16 @@ pub const PULSAR_X2CL: CompxModel = CompxModel {
     profiles: 4,
     fw_bcd: true,
     pulsar_init: true,
+    scyrox_ident: false,
+    fps20k: false,
+    angle_tune: false,
 };
 
 /// registry の model id → 機種表。
 pub fn model_for(id: &str) -> &'static CompxModel {
     match id {
         "scyrox-v6" => &SCYROX_V6,
+        "scyrox-v6s" => &SCYROX_V6S,
         "x2-crazylight" => &PULSAR_X2CL,
         _ => &ATK_F1V3U,
     }
@@ -316,16 +403,24 @@ pub fn parse_3955(b: &[u8]) -> (u32, u32) {
     let mut y = b[2] as u32 | ((b[3] as u32) << 8) | ((f >> 6) << 16);
     x += 1;
     y += 1;
-    if f & 1 == 1 {
-        x *= 2;
-    }
-    if f & 2 == 2 {
-        y *= 2;
+    // 帯マーカー: x = bit0-1、y = bit4-5。立っているビット 1 つにつき 2 倍
+    // (公式 encoder は 42002 以上を半分にして 0x11 を立てる)。
+    for bit in [1u32, 2] {
+        if f & bit != 0 {
+            x *= 2;
+        }
+        if f & (bit << 4) != 0 {
+            y *= 2;
+        }
     }
     (x, y)
 }
 
 pub fn encode_3955(x: u32, y: u32) -> Vec<u8> {
+    // 42002 以上は値を半分にして帯マーカー 1 (x: bit0 / y: bit4) を立てる。
+    let band = |v: u32| if v >= 42002 { (v / 2, 1u32) } else { (v, 0) };
+    let (x, bx) = band(x);
+    let (y, by) = band(y);
     let l = x.saturating_sub(1);
     let s = y.saturating_sub(1);
     let mut b = vec![
@@ -333,7 +428,7 @@ pub fn encode_3955(x: u32, y: u32) -> Vec<u8> {
         ((l >> 8) & 0xff) as u8,
         (s & 0xff) as u8,
         ((s >> 8) & 0xff) as u8,
-        ((((l >> 16) & 3) << 2) | (((s >> 16) & 3) << 6)) as u8,
+        ((((l >> 16) & 3) << 2) | (((s >> 16) & 3) << 6) | bx | (by << 4)) as u8,
         0,
     ];
     b[5] = crc(&b);
@@ -358,7 +453,17 @@ pub fn open(
     events: Option<std::sync::Arc<dyn Fn(HubEvent) + Send + Sync>>,
 ) -> HubResult<AtkDriver> {
     dev.set_blocking_mode(false).ok();
-    let model = model_for(&info.model);
+    let mut info = info;
+    let mut model = model_for(&info.model);
+    if model.scyrox_ident {
+        if let Some((name, m)) = scyrox_handshake(&dev).and_then(|(cid, mid)| {
+            (cid == 62).then(|| scyrox_model(mid)).flatten()
+        }) {
+            model = m;
+            info.name = name.into();
+            info.model = m.model.into();
+        }
+    }
     let d = AtkDriver {
         dev: Mutex::new(dev),
         caps: build_caps(model, info.transport),
@@ -373,6 +478,37 @@ pub fn open(
     // CID/MID で機種確定 (応答があれば名を差し替える)。
     d.maybe_detect();
     Ok(d)
+}
+
+/// Scyrox の cmd1 (EncryptionData): 4B の乱数 + 4B の 0 を送り、応答
+/// `[8, 1, st, …, cid @10, mid @11, 種別 @12]` を読む (S-Center / S-App と同じ)。
+fn scyrox_handshake(dev: &hidapi::HidDevice) -> Option<(u8, u8)> {
+    let t = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0x5a5a_5a5a)
+        .to_le_bytes();
+    let mut f = [0u8; 17];
+    f[0] = RID;
+    f[1] = 1;
+    f[5] = 8;
+    f[6..10].copy_from_slice(&t);
+    let s: u32 = f[..16].iter().map(|&b| b as u32).sum();
+    f[16] = 85u32.wrapping_sub(s) as u8;
+    for _ in 0..3 {
+        dev.write(&f).ok()?;
+        let deadline = Instant::now() + Duration::from_millis(400);
+        while Instant::now() < deadline {
+            let mut buf = [0u8; 64];
+            match dev.read_timeout(&mut buf, 100) {
+                Ok(n) if n >= 17 && buf[0] == RID && buf[1] == 1 => {
+                    return (buf[10] != 0).then_some((buf[10], buf[11]));
+                }
+                _ => {}
+            }
+        }
+    }
+    None
 }
 
 impl AtkDriver {
@@ -795,6 +931,19 @@ pub fn build_caps(m: &CompxModel, transport: Transport) -> Capabilities {
                 .help("Runs the sensor at maximum performance (shorter battery life, @181)"),
         );
     }
+    if m.fps20k {
+        if let Some(label) = m.perf_mode {
+            settings.push(
+                SettingSpec::toggle("fps20k", PERFORMANCE, "20K FPS")
+                    .help("20,000 FPS sensor scanning — uses more battery")
+                    .enabled_when(
+                        "hyper_mode",
+                        SettingValue::Bool(true),
+                        &format!("Turn on {label} first"),
+                    ),
+            );
+        }
+    }
     settings.extend([
         SettingSpec::choice("lod", SENSOR, "Lift-off distance", lod_opts(m))
             .help("Height at which it stops tracking when lifted"),
@@ -805,6 +954,12 @@ pub fn build_caps(m: &CompxModel, transport: Transport) -> Capabilities {
         SettingSpec::toggle("ripple", SENSOR, "Ripple control")
             .help("Suppresses fine jitter at high DPI"),
     ]);
+    if m.angle_tune {
+        settings.push(
+            SettingSpec::slider("angle_tune", SENSOR, "Angle tuning", -30., 30., 1., "°")
+                .help("Rotates the sensor axes to match your grip"),
+        );
+    }
     if m.atk_hub {
         settings.push(
             SettingSpec::slider("wheel_debounce", CLICK, "Wheel delay", 0., 60., 1., "ms")
@@ -817,12 +972,15 @@ pub fn build_caps(m: &CompxModel, transport: Transport) -> Capabilities {
     );
     settings.push(
         SettingSpec::choice(
-            "sleep_min",
+            "sleep",
             POWER,
             "Sleep timeout",
             m.sleep_opts
                 .iter()
-                .map(|&v| ChoiceOpt::new(v, format!("{v} min")))
+                .map(|&v| {
+                    let label = if v < 60 { format!("{v} s") } else { format!("{} min", v / 60) };
+                    ChoiceOpt::new(v, label)
+                })
                 .collect(),
         )
         .help("Time until sleep without activity (stored in 10-second units)"),
@@ -1016,15 +1174,25 @@ impl DeviceDriver for AtkDriver {
             ee::CLOSE_LED
         };
         if let Ok(v) = self.ee_u8(sleep_addr) {
-            // wire = 10 秒単位 → 分。選択肢の中で最も近いものに寄せる。
-            let min = ((v as i64 * 10) / 60).max(1);
+            // wire = 10 秒単位 → 秒。選択肢の中で最も近いものに寄せる。
+            let secs = v as i64 * 10;
             let near = m
                 .sleep_opts
                 .iter()
                 .copied()
-                .min_by_key(|o| (o - min).abs())
-                .unwrap_or(min);
-            settings.insert("sleep_min".into(), SettingValue::Choice(near));
+                .min_by_key(|o| (o - secs).abs())
+                .unwrap_or(secs);
+            settings.insert("sleep".into(), SettingValue::Choice(near));
+        }
+        if m.fps20k {
+            if let Ok(v) = self.ee_u8(ee::FPS_20K) {
+                settings.insert("fps20k".into(), SettingValue::Bool(v != 0));
+            }
+        }
+        if m.angle_tune {
+            let on = self.ee_u8(ee::ANGLE_TUNE_ON).unwrap_or(0) == 1;
+            let deg = if on { self.ee_u8(ee::ANGLE_TUNE).unwrap_or(0) as i8 } else { 0 };
+            settings.insert("angle_tune".into(), SettingValue::Num(deg as f32));
         }
         // 注: cmd22/23 の長距離モードはドングル側機能 — 有線では cmd22 は ACK するが
         // cmd23 は常に 0 を返す (実機確認) ので設定には出さない。
@@ -1091,7 +1259,24 @@ impl DeviceDriver for AtkDriver {
                 "angle_snap" => self.ee_write_val(ee::ANGLE_SNAP, value.as_bool() as u8),
                 "ripple" => self.ee_write_val(ee::RIPPLE, value.as_bool() as u8),
                 "hyper_mode" if m.perf_mode.is_some() => {
-                    self.ee_write_val(ee::PERF_MODE, value.as_bool() as u8)
+                    let on = value.as_bool();
+                    // 公式: 20K FPS は競技モードが前提 — OFF にするなら 20K も落とす。
+                    if !on && m.fps20k {
+                        self.ee_write_val(ee::FPS_20K, 0)?;
+                    }
+                    self.ee_write_val(ee::PERF_MODE, on as u8)
+                }
+                "fps20k" if m.fps20k => {
+                    let on = value.as_bool();
+                    if on && self.ee_u8(ee::PERF_MODE).unwrap_or(0) == 0 {
+                        return Err(HubError::Invalid("Turn on competitive mode first".into()));
+                    }
+                    self.ee_write_val(ee::FPS_20K, on as u8)
+                }
+                "angle_tune" if m.angle_tune => {
+                    let deg = value.as_num().round().clamp(-30., 30.) as i8;
+                    self.ee_write_val(ee::ANGLE_TUNE_ON, 1)?;
+                    self.ee_write_val(ee::ANGLE_TUNE, deg as u8)
                 }
                 "wheel_debounce" if m.atk_hub => {
                     self.ee_write_val(ee::WHEEL_DEBOUNCE, value.as_num().clamp(0., 255.) as u8)
@@ -1100,9 +1285,9 @@ impl DeviceDriver for AtkDriver {
                     ee::DEBOUNCE,
                     value.as_num().clamp(0., m.debounce_max) as u8,
                 ),
-                "sleep_min" => {
-                    // 分 → 10 秒単位 (1分→6)。
-                    let v = (value.as_choice().clamp(1, 42) * 6) as u8;
+                "sleep" => {
+                    // 秒 → 10 秒単位。
+                    let v = (value.as_choice() / 10).clamp(1, 255) as u8;
                     if m.sleep_mirror {
                         self.ee_write_val(ee::SLEEP_TIME, v)?;
                     }
@@ -1225,6 +1410,29 @@ mod tests {
         // 公式 encoder: 1600 DPI → 3f 06 3f 06 00 cb。
         assert_eq!(encode_3955(1600, 1600), vec![0x3f, 0x06, 0x3f, 0x06, 0x00, 0xcb]);
         assert_eq!(parse_3955(&[0x3f, 0x06, 0x3f, 0x06, 0x00, 0xcb]), (1600, 1600));
+    }
+
+    #[test]
+    fn sensor3955_high_band_round_trips() {
+        for dpi in [50, 1600, 26000, 42000, 42002, 45000, 50000] {
+            let b = encode_3955(dpi, dpi);
+            assert_eq!(b.iter().fold(0u8, |a, &x| a.wrapping_add(x)), 0x55, "{dpi}");
+            assert_eq!(parse_3955(&b), (dpi, dpi), "{dpi}");
+        }
+        // 公式: 42002 以上は帯マーカー 0x11。
+        assert_eq!(encode_3955(50000, 50000)[4] & 0x33, 0x11);
+    }
+
+    #[test]
+    fn scyrox_handshake_ids_pick_the_sensor_layout() {
+        assert_eq!(scyrox_model(19).unwrap().1.dpi, DpiLayout::Sensor3955); // V6s black
+        assert_eq!(scyrox_model(2).unwrap().1.dpi, DpiLayout::Legacy50); // V6
+        assert_eq!(scyrox_model(6).unwrap().1.debounce_max, 15.); // V6s pink
+        assert!(scyrox_model(99).is_none());
+        let c = build_caps(&SCYROX_V6S, Transport::Wireless24G);
+        assert!(c.setting("fps20k").is_some() && c.setting("angle_tune").is_some());
+        assert_eq!(lod_encode(&SCYROX_V6S, 9), Some(2));
+        assert!(build_caps(&SCYROX_V6, Transport::Wired).setting("fps20k").is_none());
     }
 
     #[test]
